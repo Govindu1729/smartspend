@@ -1,0 +1,29 @@
+export type Transaction = {
+  id: string;
+  user_id: string;
+  amount: number;
+  type: 'income' | 'expense';
+  category_id?: string;
+  description?: string;
+  date: string; // YYYY-MM-DD
+  is_recurring: boolean;
+  recurring_interval?: 'daily' | 'weekly' | 'monthly' | 'yearly';
+  categories?: { name: string; icon: string };
+};
+
+export type Category = {
+  id: string;
+  user_id: string;
+  name: string;
+  icon: string;
+  is_default: boolean;
+};
+
+export type Budget = {
+  id: string;
+  category_id: string;
+  month: string; // first day of month
+  amount: number;
+  alert_threshold: number;
+  categories?: { name: string; icon: string };
+};
