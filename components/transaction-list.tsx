@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { useTransactions } from '@/hooks/use-transactions';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -9,16 +10,25 @@ import { format } from 'date-fns';
 import { Pencil, Trash2, ArrowUpRight, ArrowDownRight, Repeat } from 'lucide-react';
 
 interface TransactionListProps {
-  transactions: any[];
-  loading: boolean;
-  onUpdate: (id: string, updates: any) => Promise<void>;
-  onDelete: (id: string) => Promise<void>;
+  transactions?: any[];
+  loading?: boolean;
+  onUpdate?: (id: string, updates: any) => Promise<void>;
+  onDelete?: (id: string) => Promise<void>;
   showAll?: boolean;
+  userId?: string;
+  limit?: number;
 }
 
-export function TransactionList({ transactions, loading, onUpdate, onDelete }: TransactionListProps) {
+export function TransactionList({ transactions: propTransactions, loading: propLoading, onUpdate: propOnUpdate, onDelete: propOnDelete, showAll, userId, limit }: TransactionListProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  // If a userId is provided, fetch transactions using the hook (dashboard use-case)
+  const txHook = userId ? useTransactions(userId, limit) : null;
+  const transactions = propTransactions ?? txHook?.transactions ?? [];
+  const loading = propLoading ?? txHook?.loading ?? false;
+  const onUpdate = propOnUpdate ?? txHook?.updateTransaction ?? (async () => {});
+  const onDelete = propOnDelete ?? txHook?.deleteTransaction ?? (async () => {});
 
   if (loading) {
     return (

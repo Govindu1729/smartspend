@@ -57,3 +57,6 @@ export function createAdminClient() {
     },
   });
 }
+
+// Export a ready-to-use admin client for server-side operations
+export const supabaseAdmin = createAdminClient();

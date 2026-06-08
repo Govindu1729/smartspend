@@ -32,7 +32,7 @@ export async function GET(request: Request) {
   const savingsRate = totalIncome > 0 ? Math.round(((totalIncome - totalExpense) / totalIncome) * 100) : 0;
 
   // Get monthly trend for last 6 months
-  const monthlyTrend = [];
+  const monthlyTrend: Array<{ month: string; income: number; expense: number }> = [];
   for (let i = 5; i >= 0; i--) {
     const monthStart = format(startOfMonth(subMonths(new Date(), i)), 'yyyy-MM-dd');
     const monthEnd = format(endOfMonth(subMonths(new Date(), i)), 'yyyy-MM-dd');
@@ -42,4 +42,14 @@ export async function GET(request: Request) {
       .from('transactions')
       .select('amount, type')
       .eq('user_id', userId)
-      .gte('date',
+      .gte('date', monthStart)
+      .lte('date', monthEnd);
+
+    const income = monthData?.filter((t) => t.type === 'income').reduce((sum, t) => sum + t.amount, 0) || 0;
+    const expense = monthData?.filter((t) => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0) || 0;
+
+    monthlyTrend.push({ month: monthLabel, income, expense });
+  }
+
+  return NextResponse.json({ totalIncome, totalExpense, savingsRate, monthlyTrend });
+}
