@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { MobileNav } from '@/components/mobile-nav';
 import { ServiceWorkerRegistration } from '@/components/service-worker-registration';
 import { 
   LayoutDashboard, 
@@ -9,7 +10,9 @@ import {
   PiggyBank, 
   BarChart3, 
   Sparkles,
-  LogOut 
+  LogOut,
+  Bell,
+  Settings
 } from 'lucide-react';
 
 export default async function DashboardLayout({
@@ -59,37 +62,34 @@ export default async function DashboardLayout({
                 ))}
               </div>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="hidden md:flex items-center gap-4">
               <span className="text-sm text-muted-foreground">
                 {user.email}
               </span>
+              <Link href="/notifications">
+                <Button variant="ghost" size="icon" title="Notifications">
+                  <Bell className="h-4 w-4" />
+                </Button>
+              </Link>
+              <Link href="/settings">
+                <Button variant="ghost" size="icon" title="Settings">
+                  <Settings className="h-4 w-4" />
+                </Button>
+              </Link>
               <form action="/api/auth/signout" method="POST">
-                <Button variant="ghost" size="icon" type="submit">
+                <Button variant="ghost" size="icon" type="submit" title="Logout">
                   <LogOut className="h-4 w-4" />
                 </Button>
               </form>
+            </div>
+            <div className="md:hidden">
+              <MobileNav userEmail={user.email || ''} />
             </div>
           </div>
         </div>
       </nav>
 
-      {/* Mobile Navigation */}
-      <div className="md:hidden border-b">
-        <div className="container mx-auto px-4">
-          <div className="flex overflow-x-auto py-2 gap-2">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="flex items-center gap-1 px-3 py-1 text-sm text-muted-foreground hover:text-foreground whitespace-nowrap"
-              >
-                <item.icon className="h-4 w-4" />
-                {item.label}
-              </Link>
-            ))}
-          </div>
-        </div>
-      </div>
+      {/* Mobile Navigation Drawer */}
 
       {/* Main Content */}
       <main>{children}</main>
