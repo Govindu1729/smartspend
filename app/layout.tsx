@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { ServiceWorkerRegistration } from '@/components/service-worker-registration';
 import { 
   LayoutDashboard, 
   ArrowRightLeft, 
@@ -33,6 +34,9 @@ export default async function DashboardLayout({
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Service Worker Registration */}
+      <ServiceWorkerRegistration />
+
       {/* Navigation Bar */}
       <nav className="border-b">
         <div className="container mx-auto px-4">

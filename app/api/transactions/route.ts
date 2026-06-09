@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { sendBudgetAlerts } from '@/lib/budget-alerts';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -63,25 +64,12 @@ export async function POST(request: NextRequest) {
   }
 
   // Check budget alerts after adding expense
-  if (type === 'expense') {
+  if (type === 'expense' && category_id) {
     try {
-      const { data: alerts } = await supabase.rpc('check_budget_alerts');
-      if (alerts && alerts.length > 0) {
-        const userAlert = alerts.find((a: any) => a.user_id === user_id);
-        if (userAlert) {
-          // Trigger push notification
-          await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/push/send`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              userId: user_id,
-              message: `Budget alert: You've spent ${userAlert.percent}% of your ${userAlert.category} budget!`,
-            }),
-          });
-        }
-      }
+      await sendBudgetAlerts(user_id, category_id);
     } catch (err) {
-      console.error('Error checking budget alerts:', err);
+      console.error('Error sending budget alerts:', err);
+      // Don't fail the transaction creation if alerts fail
     }
   }
 

@@ -98,6 +98,89 @@ async function networkFirstStrategy(request) {
     if (cachedResponse) {
       return cachedResponse;
     }
+    return new Response('You are offline', {
+      status: 503,
+      statusText: 'Service Unavailable',
+    });
+  }
+}
+
+// Handle push notifications
+self.addEventListener('push', (event) => {
+  if (!event.data) {
+    console.log('Push notification received but no data');
+    return;
+  }
+
+  let notificationData = {
+    title: 'SmartSpend',
+    body: 'You have a new notification',
+    icon: '/icons/icon-192x192.png',
+    badge: '/icons/icon-192x192.png',
+  };
+
+  try {
+    const data = event.data.json();
+    notificationData = {
+      title: data.title || notificationData.title,
+      body: data.body || notificationData.body,
+      icon: data.icon || notificationData.icon,
+      badge: data.badge || notificationData.badge,
+    };
+  } catch (error) {
+    notificationData.body = event.data.text();
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(notificationData.title, {
+      body: notificationData.body,
+      icon: notificationData.icon,
+      badge: notificationData.badge,
+      tag: 'smartspend-notification',
+      requireInteraction: true,
+      actions: [
+        {
+          action: 'open',
+          title: 'Open SmartSpend',
+        },
+        {
+          action: 'close',
+          title: 'Dismiss',
+        },
+      ],
+    })
+  );
+});
+
+// Handle notification clicks
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+
+  if (event.action === 'close') {
+    return;
+  }
+
+  // Focus on app if already open, otherwise open new window
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+      for (let i = 0; i < windowClients.length; i++) {
+        const client = windowClients[i];
+        if (client.url === '/' && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      if (clients.openWindow) {
+        return clients.openWindow('/');
+      }
+    })
+  );
+});
+
+// Handle notification close
+self.addEventListener('notificationclose', (event) => {
+  console.log('Notification closed:', event.notification.tag);
+});
+
     return new Response(
       JSON.stringify({ error: 'You are offline' }),
       {

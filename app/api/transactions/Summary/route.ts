@@ -16,7 +16,7 @@ export async function GET(request: Request) {
 
   const { data: currentMonthTransactions } = await supabaseAdmin
     .from('transactions')
-    .select('amount, type')
+    .select('amount, type, category_id, categories(id, name)')
     .eq('user_id', userId)
     .gte('date', currentMonthStart)
     .lte('date', currentMonthEnd);
@@ -30,6 +30,22 @@ export async function GET(request: Request) {
     .reduce((sum, t) => sum + t.amount, 0) || 0;
 
   const savingsRate = totalIncome > 0 ? Math.round(((totalIncome - totalExpense) / totalIncome) * 100) : 0;
+
+  // Get top spending categories
+  const categorySpending: { [key: string]: { name: string; value: number } } = {};
+  currentMonthTransactions
+    ?.filter((t) => t.type === 'expense')
+    .forEach((t: any) => {
+      const catName = t.categories?.name || 'Uncategorized';
+      if (!categorySpending[catName]) {
+        categorySpending[catName] = { name: catName, value: 0 };
+      }
+      categorySpending[catName].value += t.amount;
+    });
+
+  const topCategories = Object.values(categorySpending)
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 5);
 
   // Get monthly trend for last 6 months
   const monthlyTrend: Array<{ month: string; income: number; expense: number }> = [];
@@ -51,5 +67,11 @@ export async function GET(request: Request) {
     monthlyTrend.push({ month: monthLabel, income, expense });
   }
 
-  return NextResponse.json({ totalIncome, totalExpense, savingsRate, monthlyTrend });
+  return NextResponse.json({ 
+    totalIncome, 
+    totalExpense, 
+    savingsRate, 
+    monthlyTrend,
+    topCategories
+  });
 }

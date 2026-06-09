@@ -31,6 +31,7 @@ export function TransactionForm({ userId, initialData, onSubmit }: TransactionFo
   const { categories } = useCategories(userId);
   const [isCategorizing, setIsCategorizing] = useState(false);
   const [description, setDescription] = useState(initialData?.description || '');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm({
     resolver: zodResolver(transactionSchema),
@@ -46,9 +47,10 @@ export function TransactionForm({ userId, initialData, onSubmit }: TransactionFo
   });
 
   const isRecurring = watch('is_recurring');
+  const transactionType = watch('type');
 
   const handleAutoCategorize = async () => {
-    if (!description) return;
+    if (!description || transactionType === 'income') return;
     setIsCategorizing(true);
     try {
       const response = await fetch('/api/ai/categorize', {
@@ -66,10 +68,20 @@ export function TransactionForm({ userId, initialData, onSubmit }: TransactionFo
     setIsCategorizing(false);
   };
 
+  const handleFormSubmit = async (data: any) => {
+    setIsSubmitting(true);
+    try {
+      await onSubmit(data);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
+      {/* Transaction Type */}
       <div>
-        <Label htmlFor="type">Transaction Type</Label>
+        <Label htmlFor="type" className="font-semibold">Transaction Type</Label>
         <Select
           defaultValue={initialData?.type || 'expense'}
           onValueChange={(value: 'income' | 'expense') => setValue('type', value)}
@@ -84,49 +96,62 @@ export function TransactionForm({ userId, initialData, onSubmit }: TransactionFo
         </Select>
       </div>
 
+      {/* Amount */}
       <div>
-        <Label htmlFor="amount">Amount (₹)</Label>
+        <Label htmlFor="amount" className="font-semibold">Amount (₹)</Label>
         <Input
           id="amount"
           type="number"
           step="0.01"
           {...register('amount', { valueAsNumber: true })}
           placeholder="0.00"
+          className="text-lg"
         />
         {errors.amount && <p className="text-sm text-red-500 mt-1">{errors.amount.message?.toString()}</p>}
       </div>
 
+      {/* Description */}
       <div>
-        <div className="flex justify-between items-center">
-          <Label htmlFor="description">Description</Label>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={handleAutoCategorize}
-            disabled={!description || isCategorizing}
-          >
-            {isCategorizing ? (
-              <Loader2 className="h-4 w-4 animate-spin mr-1" />
-            ) : (
-              <Sparkles className="h-4 w-4 mr-1" />
-            )}
-            Auto-categorize
-          </Button>
+        <div className="flex justify-between items-center mb-2">
+          <Label htmlFor="description" className="font-semibold">Description</Label>
+          {transactionType === 'expense' && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={handleAutoCategorize}
+              disabled={!description || isCategorizing}
+            >
+              {isCategorizing ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                  Categorizing...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4 mr-1" />
+                  Auto-categorize
+                </>
+              )}
+            </Button>
+          )}
         </div>
         <Input
           id="description"
           {...register('description')}
-          placeholder="e.g., Lunch at mess"
+          placeholder="e.g., Lunch at mess, Online shopping"
+          value={description}
           onChange={(e) => {
             setDescription(e.target.value);
             register('description').onChange(e);
           }}
         />
+        <p className="text-xs text-muted-foreground mt-1">Optional: Add a description for better tracking</p>
       </div>
 
+      {/* Category */}
       <div>
-        <Label htmlFor="category">Category</Label>
+        <Label htmlFor="category" className="font-semibold">Category</Label>
         <Select
           defaultValue={initialData?.category_id || ''}
           onValueChange={(value) => setValue('category_id', value)}
@@ -144,23 +169,29 @@ export function TransactionForm({ userId, initialData, onSubmit }: TransactionFo
         </Select>
       </div>
 
+      {/* Date */}
       <div>
-        <Label htmlFor="date">Date</Label>
+        <Label htmlFor="date" className="font-semibold">Date</Label>
         <Input id="date" type="date" {...register('date')} />
       </div>
 
-      <div className="flex items-center space-x-2">
-        <Switch
-          id="is_recurring"
-          checked={isRecurring}
-          onCheckedChange={(checked) => setValue('is_recurring', checked)}
-        />
-        <Label htmlFor="is_recurring">Recurring Transaction</Label>
+      {/* Recurring Transaction */}
+      <div className="pt-2">
+        <div className="flex items-center space-x-2">
+          <Switch
+            id="is_recurring"
+            checked={isRecurring}
+            onCheckedChange={(checked) => setValue('is_recurring', checked)}
+          />
+          <Label htmlFor="is_recurring" className="font-semibold">Recurring Transaction?</Label>
+        </div>
+        <p className="text-xs text-muted-foreground mt-1">Mark if this is a repeating payment</p>
       </div>
 
+      {/* Recurring Interval */}
       {isRecurring && (
         <div>
-          <Label htmlFor="recurring_interval">Recurring Interval</Label>
+          <Label htmlFor="recurring_interval" className="font-semibold">How often?</Label>
           <Select
             defaultValue={initialData?.recurring_interval || 'monthly'}
             onValueChange={(value: any) => setValue('recurring_interval', value)}
@@ -178,8 +209,21 @@ export function TransactionForm({ userId, initialData, onSubmit }: TransactionFo
         </div>
       )}
 
-      <Button type="submit" className="w-full">
-        {initialData ? 'Update' : 'Add'} Transaction
+      {/* Submit Button */}
+      <Button 
+        type="submit" 
+        className="w-full mt-6" 
+        size="lg"
+        disabled={isSubmitting}
+      >
+        {isSubmitting ? (
+          <>
+            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            Saving...
+          </>
+        ) : (
+          initialData ? 'Update Transaction' : 'Add Transaction'
+        )}
       </Button>
     </form>
   );

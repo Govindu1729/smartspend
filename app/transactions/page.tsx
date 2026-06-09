@@ -47,8 +47,12 @@ export default function TransactionsPage() {
     return true;
   });
 
-  const handleExport = () => {
+  const handleExportCSV = () => {
     window.open(`/api/export?user_id=${user.id}`, '_blank');
+  };
+
+  const handleExportPDF = () => {
+    window.open(`/api/export/pdf?user_id=${user.id}&format=pdf`, '_blank');
   };
 
   const clearFilters = () => {
@@ -62,8 +66,11 @@ export default function TransactionsPage() {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Transactions</h1>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={handleExport}>
+          <Button variant="outline" onClick={handleExportCSV}>
             <Download className="mr-2 h-4 w-4" /> Export CSV
+          </Button>
+          <Button variant="outline" onClick={handleExportPDF}>
+            <Download className="mr-2 h-4 w-4" /> Export PDF
           </Button>
           <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
             <DialogTrigger asChild>

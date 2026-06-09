@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Loader2 } from 'lucide-react';
+import { useState } from 'react';
 
 const budgetSchema = z.object({
   category_id: z.string().min(1, 'Category is required'),
@@ -22,7 +24,8 @@ interface BudgetPlannerProps {
 }
 
 export function BudgetPlanner({ userId, categories, initialData, onSubmit }: BudgetPlannerProps) {
-  const { register, handleSubmit, setValue, formState: { errors } } = useForm({
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm({
     resolver: zodResolver(budgetSchema),
     defaultValues: {
       category_id: initialData?.category_id || '',
@@ -32,62 +35,105 @@ export function BudgetPlanner({ userId, categories, initialData, onSubmit }: Bud
     },
   });
 
+  const alertThreshold = watch('alert_threshold');
+
+  const handleFormSubmit = async (data: any) => {
+    setIsSubmitting(true);
+    try {
+      await onSubmit(data);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-5">
+      {/* Category */}
       <div>
-        <Label htmlFor="category">Category</Label>
+        <Label htmlFor="category" className="font-semibold mb-2 block">Select Category</Label>
         <Select
           defaultValue={initialData?.category_id || ''}
           onValueChange={(value) => setValue('category_id', value)}
         >
           <SelectTrigger>
-            <SelectValue placeholder="Select category" />
+            <SelectValue placeholder="Choose a category..." />
           </SelectTrigger>
           <SelectContent>
-            {categories.map((cat) => (
-              <SelectItem key={cat.id} value={cat.id}>
-                {cat.name}
-              </SelectItem>
-            ))}
+            {categories && categories.length > 0 ? (
+              categories.map((cat) => (
+                <SelectItem key={cat.id} value={cat.id}>
+                  {cat.name}
+                </SelectItem>
+              ))
+            ) : (
+              <SelectItem value="" disabled>No categories available</SelectItem>
+            )}
           </SelectContent>
         </Select>
         {errors.category_id && <p className="text-sm text-red-500 mt-1">{errors.category_id.message?.toString()}</p>}
       </div>
 
+      {/* Monthly Budget Amount */}
       <div>
-        <Label htmlFor="amount">Monthly Budget (₹)</Label>
+        <Label htmlFor="amount" className="font-semibold mb-2 block">Monthly Budget (₹)</Label>
         <Input
           id="amount"
           type="number"
+          step="100"
+          min="0"
           {...register('amount', { valueAsNumber: true })}
-          placeholder="5000"
+          placeholder="e.g., 5000"
+          className="text-lg"
         />
         {errors.amount && <p className="text-sm text-red-500 mt-1">{errors.amount.message?.toString()}</p>}
+        <p className="text-xs text-muted-foreground mt-1">Set how much you plan to spend on this category each month</p>
       </div>
 
+      {/* Month */}
       <div>
-        <Label htmlFor="month">Month</Label>
+        <Label htmlFor="month" className="font-semibold mb-2 block">Month</Label>
         <Input id="month" type="month" {...register('month')} />
+        <p className="text-xs text-muted-foreground mt-1">Select the month for this budget</p>
       </div>
 
+      {/* Alert Threshold */}
       <div>
-        <Label htmlFor="alert_threshold">Alert Threshold (%)</Label>
+        <Label htmlFor="alert_threshold" className="font-semibold mb-2 block">
+          Alert Threshold: {Math.round(alertThreshold * 100)}%
+        </Label>
         <Input
           id="alert_threshold"
-          type="number"
-          step="0.05"
+          type="range"
           min="0.5"
           max="1"
+          step="0.05"
           {...register('alert_threshold', { valueAsNumber: true })}
-          placeholder="0.8 (80%)"
+          className="cursor-pointer"
         />
-        <p className="text-xs text-muted-foreground mt-1">
-          You'll get notified when spending reaches this percentage (e.g., 0.8 = 80%)
+        <div className="flex justify-between text-xs text-muted-foreground mt-2">
+          <span>50% - Alert Early</span>
+          <span>100% - Alert at Limit</span>
+        </div>
+        <p className="text-sm text-muted-foreground mt-2">
+          You'll get notified when your spending reaches {Math.round(alertThreshold * 100)}% of your budget
         </p>
       </div>
 
-      <Button type="submit" className="w-full">
-        {initialData ? 'Update' : 'Set'} Budget
+      {/* Submit Button */}
+      <Button 
+        type="submit" 
+        className="w-full mt-6" 
+        size="lg"
+        disabled={isSubmitting}
+      >
+        {isSubmitting ? (
+          <>
+            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            Saving...
+          </>
+        ) : (
+          initialData ? 'Update Budget' : 'Set Budget'
+        )}
       </Button>
     </form>
   );
