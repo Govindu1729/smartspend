@@ -1,8 +1,9 @@
 import { createClient } from '@/lib/supabase/server';
-import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { MobileNav } from '@/components/mobile-nav';
+import { Footer } from '@/components/footer';
+import { Toaster } from '@/components/toaster';
 import { ServiceWorkerRegistration } from '@/components/service-worker-registration';
 import { 
   LayoutDashboard, 
@@ -15,16 +16,18 @@ import {
   Settings
 } from 'lucide-react';
 
-export default async function DashboardLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect('/login');
+  let user = null;
+  try {
+    const supabase = await createClient();
+    const { data } = await supabase.auth.getUser();
+    user = data?.user ?? null;
+  } catch {
+    // Not authenticated — show public content (landing page)
   }
 
   const navItems = [
@@ -40,6 +43,9 @@ export default async function DashboardLayout({
       {/* Service Worker Registration */}
       <ServiceWorkerRegistration />
 
+      {/* Toaster */}
+      <Toaster />
+
       {/* Navigation Bar */}
       <nav className="border-b">
         <div className="container mx-auto px-4">
@@ -49,41 +55,56 @@ export default async function DashboardLayout({
                 <PiggyBank className="h-6 w-6" />
                 SmartSpend
               </Link>
-              <div className="hidden md:flex items-center gap-4">
-                {navItems.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    <item.icon className="h-4 w-4" />
-                    {item.label}
+              {user && (
+                <div className="hidden md:flex items-center gap-4">
+                  {navItems.map((item) => (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <item.icon className="h-4 w-4" />
+                      {item.label}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="flex items-center gap-4">
+              {user ? (
+                <>
+                  <span className="hidden md:inline text-sm text-muted-foreground">
+                    {user.email}
+                  </span>
+                  <Link href="/notifications" className="hidden md:inline-flex">
+                    <Button variant="ghost" size="icon" title="Notifications">
+                      <Bell className="h-4 w-4" />
+                    </Button>
                   </Link>
-                ))}
-              </div>
-            </div>
-            <div className="hidden md:flex items-center gap-4">
-              <span className="text-sm text-muted-foreground">
-                {user.email}
-              </span>
-              <Link href="/notifications">
-                <Button variant="ghost" size="icon" title="Notifications">
-                  <Bell className="h-4 w-4" />
-                </Button>
-              </Link>
-              <Link href="/settings">
-                <Button variant="ghost" size="icon" title="Settings">
-                  <Settings className="h-4 w-4" />
-                </Button>
-              </Link>
-              <form action="/api/auth/signout" method="POST">
-                <Button variant="ghost" size="icon" type="submit" title="Logout">
-                  <LogOut className="h-4 w-4" />
-                </Button>
-              </form>
-            </div>
-            <div className="md:hidden">
-              <MobileNav userEmail={user.email || ''} />
+                  <Link href="/settings" className="hidden md:inline-flex">
+                    <Button variant="ghost" size="icon" title="Settings">
+                      <Settings className="h-4 w-4" />
+                    </Button>
+                  </Link>
+                  <form action="/api/auth/signout" method="POST">
+                    <Button variant="ghost" size="icon" type="submit" title="Logout">
+                      <LogOut className="h-4 w-4" />
+                    </Button>
+                  </form>
+                  <div className="md:hidden">
+                    <MobileNav userEmail={user.email || ''} />
+                  </div>
+                </>
+              ) : (
+                <div className="flex gap-2">
+                  <Link href="/login">
+                    <Button variant="ghost" size="sm">Sign In</Button>
+                  </Link>
+                  <Link href="/signup">
+                    <Button size="sm">Get Started</Button>
+                  </Link>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -93,6 +114,9 @@ export default async function DashboardLayout({
 
       {/* Main Content */}
       <main>{children}</main>
+
+      {/* Footer */}
+      <Footer />
     </div>
   );
 }

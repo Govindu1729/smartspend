@@ -2,18 +2,20 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { DashboardSummary } from '@/components/dashboard-summary';
 import { TransactionList } from '@/components/transaction-list';
+import { LandingPage } from '@/components/landing-page';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ArrowRight, TrendingUp, PiggyBank, BarChart3 } from 'lucide-react';
 
-export default async function DashboardPage() {
+export default async function Page() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
+  // Show landing page for non-authenticated users
   if (!user) {
-    redirect('/login');
+    return <LandingPage />;
   }
 
   // Fetch current month budgets for quick overview
