@@ -4,22 +4,22 @@ import * as XLSX from 'xlsx';
 
 function parseAmount(amountStr: string): number {
   if (!amountStr) return 0;
-  return parseFloat(String(amountStr).replace(/[,₹"' ]/g, '')) || 0;
+  const cleaned = String(amountStr).replace(/[,₹"' ]/g, '').trim();
+  return parseFloat(cleaned) || 0;
 }
 
 function parseDate(dateStr: string): string {
   if (!dateStr) return new Date().toISOString().split('T')[0];
   
   try {
-    // Try parsing as Excel date number
+    // Handle Excel date serial number
     const num = parseFloat(dateStr);
     if (!isNaN(num) && num > 40000 && num < 60000) {
-      // Excel date serial number
       const date = new Date((num - 25569) * 86400 * 1000);
       return date.toISOString().split('T')[0];
     }
     
-    // Try standard date parsing
+    // Handle "Jun 07, 2026" format
     const parsed = new Date(dateStr);
     if (!isNaN(parsed.getTime())) {
       return parsed.toISOString().split('T')[0];
@@ -29,36 +29,88 @@ function parseDate(dateStr: string): string {
   return dateStr;
 }
 
+function findDataStartRow(rows: any[][]): number {
+  // Look for the header row that contains "Date" and "Amount"
+  for (let i = 0; i < Math.min(rows.length, 20); i++) {
+    const rowStr = rows[i]
+      .map((c: any) => String(c || '').toLowerCase().trim())
+      .join(' ');
+    
+    if ((rowStr.includes('date') && rowStr.includes('amount')) ||
+        (rowStr.includes('date') && rowStr.includes('transaction'))) {
+      return i; // This is the header row
+    }
+  }
+  return 0;
+}
+
 function parsePhonePe(rows: any[][]): ParsedTransaction[] {
   const transactions: ParsedTransaction[] = [];
   
-  for (const row of rows) {
-    if (!row || row.length < 4) continue;
+  // Find where actual data starts
+  const headerRowIdx = findDataStartRow(rows);
+  const headers = rows[headerRowIdx].map((h: any) => String(h || '').toLowerCase().trim());
+  
+  // Find column indices from headers
+  const findCol = (keywords: string[]): number => {
+    return headers.findIndex((h: string) => 
+      keywords.some(k => h.includes(k))
+    );
+  };
+  
+  const dateCol = findCol(['date']);
+  const descCol = findCol(['details', 'description', 'transaction details']);
+  const typeCol = findCol(['type', 'transaction type']);
+  const amountCol = findCol(['amount']);
+  
+  // If can't find amount column, use last column
+  const effectiveAmountCol = amountCol >= 0 ? amountCol : (headers.length - 1);
+  const effectiveDateCol = dateCol >= 0 ? dateCol : 0;
+  const effectiveDescCol = descCol >= 0 ? descCol : 2;
+  const effectiveTypeCol = typeCol >= 0 ? typeCol : 4;
+  
+  console.log(`PhonePe parser: dateCol=${effectiveDateCol}, descCol=${effectiveDescCol}, typeCol=${effectiveTypeCol}, amountCol=${effectiveAmountCol}`);
+  
+  // Process data rows (skip header)
+  for (let i = headerRowIdx + 1; i < rows.length; i++) {
+    const row = rows[i];
+    if (!row || row.length < 3) continue;
     
-    // Find columns by header names
-    const dateStr = String(row[0] || '').trim();
-    const description = String(row[2] || row[1] || '').trim();
-    const typeStr = String(row[4] || row[3] || '').trim().toUpperCase();
-    const amountStr = String(row[6] || row[5] || row[row.length - 1] || '').trim();
+    const dateStr = String(row[effectiveDateCol] || '').trim();
+    let description = String(row[effectiveDescCol] || '').trim();
+    const typeStr = String(row[effectiveTypeCol] || '').trim().toUpperCase();
+    const amountStr = String(row[effectiveAmountCol] || '').trim();
     
+    // Skip empty rows, header rows, footer rows
     if (!dateStr || !amountStr) continue;
     if (dateStr.toLowerCase().includes('date')) continue;
+    if (dateStr.toLowerCase().includes('duration')) continue;
+    if (dateStr.toLowerCase().includes('statement')) continue;
+    if (dateStr.toLowerCase().includes('disclaimer')) continue;
     
     const amount = parseAmount(amountStr);
     if (amount === 0) continue;
     
+    // Determine if credit or debit
     const isCredit = typeStr === 'CREDIT' || 
                      typeStr === 'C' || 
-                     description.toLowerCase().includes('received') ||
+                     description.toLowerCase().includes('received from') ||
                      description.toLowerCase().includes('credited');
+    
+    // Clean up description
+    description = description
+      .replace(/Paid to /gi, '')
+      .replace(/Received from /gi, '')
+      .replace(/Credited to /gi, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    
+    if (!description) description = 'Imported transaction';
     
     transactions.push({
       amount,
       type: isCredit ? 'income' : 'expense',
-      description: description
-        .replace(/Paid to |Paid by |Received from |Credited to /gi, '')
-        .replace(/\s+/g, ' ')
-        .trim() || 'Imported transaction',
+      description,
       date: parseDate(dateStr),
     });
   }
@@ -71,10 +123,9 @@ function parseGeneric(rows: any[][]): ParsedTransaction[] {
   
   if (rows.length === 0) return transactions;
   
-  // Find header row
-  const headers = rows[0].map((h: any) => String(h || '').toLowerCase().trim());
+  const headerRowIdx = findDataStartRow(rows);
+  const headers = rows[headerRowIdx].map((h: any) => String(h || '').toLowerCase().trim());
   
-  // Find column indices
   const findCol = (keywords: string[]): number => {
     return headers.findIndex((h: string) => 
       keywords.some(k => h.includes(k))
@@ -82,33 +133,33 @@ function parseGeneric(rows: any[][]): ParsedTransaction[] {
   };
   
   const dateCol = findCol(['date', 'time', 'dated']);
-  const descCol = findCol(['description', 'detail', 'particular', 'transaction details', 'name', 'narration']);
+  const descCol = findCol(['description', 'detail', 'particular', 'name', 'narration']);
   const amountCol = findCol(['amount', 'value', 'sum']);
-  const typeCol = findCol(['type', 'dr/cr', 'debit/credit', 'transaction type']);
+  const typeCol = findCol(['type', 'dr/cr', 'debit/credit']);
   
-  for (let i = 1; i < rows.length; i++) {
+  const effectiveDateCol = dateCol >= 0 ? dateCol : 0;
+  const effectiveDescCol = descCol >= 0 ? descCol : 1;
+  const effectiveAmountCol = amountCol >= 0 ? amountCol : (headers.length - 1);
+  const effectiveTypeCol = typeCol >= 0 ? typeCol : -1;
+  
+  for (let i = headerRowIdx + 1; i < rows.length; i++) {
     const row = rows[i];
     if (!row || row.length < 2) continue;
     
-    const dateIdx = dateCol >= 0 ? dateCol : 0;
-    const descIdx = descCol >= 0 ? descCol : 1;
-    const amountIdx = amountCol >= 0 ? amountCol : (row.length - 1);
-    const typeIdx = typeCol >= 0 ? typeCol : -1;
-    
-    const dateStr = String(row[dateIdx] || '').trim();
-    const description = String(row[descIdx] || '').trim();
-    const amountStr = String(row[amountIdx] || '').trim();
-    const typeStr = typeIdx >= 0 ? String(row[typeIdx] || '').trim().toUpperCase() : '';
+    const dateStr = String(row[effectiveDateCol] || '').trim();
+    const description = String(row[effectiveDescCol] || '').trim();
+    const amountStr = String(row[effectiveAmountCol] || '').trim();
+    const typeStr = effectiveTypeCol >= 0 ? String(row[effectiveTypeCol] || '').trim().toUpperCase() : '';
     
     if (!dateStr || !amountStr) continue;
     if (dateStr.toLowerCase().includes('date')) continue;
+    if (dateStr.toLowerCase().includes('disclaimer')) continue;
     
     const amount = parseAmount(amountStr);
     if (amount === 0) continue;
     
     const isCredit = typeStr.includes('CREDIT') || 
                      typeStr.includes('C') || 
-                     typeStr.includes('RECEIVED') ||
                      description.toLowerCase().includes('received');
     
     transactions.push({
@@ -151,7 +202,6 @@ export async function POST(request: NextRequest) {
     let rows: any[][] = [];
     
     if (fileName.endsWith('.csv') || fileName.endsWith('.txt')) {
-      // Parse CSV
       const text = new TextDecoder().decode(buffer);
       rows = text
         .split('\n')
@@ -161,24 +211,34 @@ export async function POST(request: NextRequest) {
             .map(cell => cell.replace(/^["']|["']$/g, '').trim())
         );
     } else if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
-      // Parse Excel
       const workbook = XLSX.read(buffer, { type: 'array' });
       const sheetName = workbook.SheetNames[0];
       const sheet = workbook.Sheets[sheetName];
-      rows = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as any[][];
+      rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' }) as any[][];
     } else {
       return NextResponse.json({ error: 'Unsupported file format. Use CSV or XLSX.' }, { status: 400 });
     }
 
-    if (rows.length < 1) {
-      return NextResponse.json({ error: 'Empty file' }, { status: 400 });
+    // Filter out completely empty rows
+    rows = rows.filter((row: any[]) => 
+      row.some((cell: any) => String(cell || '').trim() !== '')
+    );
+
+    if (rows.length < 2) {
+      return NextResponse.json({ error: 'File is empty or has no data rows' }, { status: 400 });
     }
 
-    // Detect format
-    const firstRow = rows[0].map((c: any) => String(c || '').toLowerCase()).join(' ');
-    const isPhonePe = firstRow.includes('phonepe') || 
-                      firstRow.includes('utr') || 
-                      firstRow.includes('transaction statement');
+    // Detect format - PhonePe has specific patterns
+    const allText = rows.slice(0, 5).map(r => 
+      r.map((c: any) => String(c || '').toLowerCase()).join(' ')
+    ).join(' ');
+    
+    const isPhonePe = allText.includes('phonepe') || 
+                      allText.includes('utr') || 
+                      allText.includes('transaction statement') ||
+                      allText.includes('credit/debit instrument');
+    
+    console.log(`Detected format: ${isPhonePe ? 'PhonePe' : 'Generic'}, rows: ${rows.length}`);
     
     let transactions: ParsedTransaction[];
     if (isPhonePe) {
@@ -188,8 +248,14 @@ export async function POST(request: NextRequest) {
     }
 
     if (transactions.length === 0) {
+      // Debug: show what we found
+      const sample = rows.slice(0, 5).map(r => JSON.stringify(r)).join('\n');
+      console.log('Sample rows:', sample);
+      console.log('First row:', JSON.stringify(rows[0]));
+      
       return NextResponse.json({ 
-        error: 'No transactions found. Check file format. First row should contain headers like Date, Description, Amount.' 
+        error: 'No transactions found. The file may have an unexpected format. Try a different file or contact support.',
+        debug: rows.length > 0 ? `Found ${rows.length} rows but no transactions. Headers found: ${rows[findDataStartRow(rows)]?.slice(0,5)?.join(', ')}` : 'No rows found'
       }, { status: 400 });
     }
 
@@ -207,7 +273,7 @@ export async function POST(request: NextRequest) {
       });
       
       if (error) {
-        errors.push(`Failed: ${txn.description} - ${error.message}`);
+        errors.push(`${txn.description}: ${error.message}`);
       } else {
         imported++;
       }
@@ -217,8 +283,8 @@ export async function POST(request: NextRequest) {
       success: true,
       imported,
       total: transactions.length,
-      errors: errors.slice(0, 5),
-      message: `Imported ${imported} of ${transactions.length} transactions`,
+      errors: errors.slice(0, 3),
+      message: `✅ Imported ${imported} of ${transactions.length} transactions!`,
     });
 
   } catch (error) {
