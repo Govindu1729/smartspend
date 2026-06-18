@@ -1,14 +1,13 @@
-const AI_MODEL = process.env.AI_MODEL || 'google/gemini-2.0-flash-001';
+const AI_MODEL = process.env.AI_MODEL || 'google/gemini-2.0-flash-exp:free';
 
 function getApiKey(): string {
-  const apiKey = process.env.OPENROUTER_API_KEY || process.env.GEMINI_API_KEY;
+  const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) throw new Error('API key not set');
   return apiKey;
 }
 
 async function callAI(prompt: string): Promise<string> {
   const apiKey = getApiKey();
-  console.log('Using API key (first 10 chars):', apiKey.substring(0, 10) + '...');
   
   const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
@@ -25,10 +24,9 @@ async function callAI(prompt: string): Promise<string> {
   });
 
   const text = await response.text();
-  console.log('OpenRouter response status:', response.status);
   
   if (!response.ok) {
-    throw new Error(`Status ${response.status}: ${text.substring(0, 100)}`);
+    throw new Error(`Status ${response.status}: ${text.substring(0, 150)}`);
   }
   
   const data = JSON.parse(text);
