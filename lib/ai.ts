@@ -1,4 +1,4 @@
-const AI_MODEL = process.env.AI_MODEL || 'meta-llama/llama-3.2-3b-instruct:free';
+const AI_MODEL = process.env.AI_MODEL || 'qwen/qwen-2.5-7b-instruct:free';
 
 function getApiKey(): string {
   const apiKey = process.env.OPENROUTER_API_KEY;
