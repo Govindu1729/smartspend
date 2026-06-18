@@ -35,7 +35,7 @@ export default function TransactionsPage() {
     });
   }, []);
 
-  const { transactions, loading, addTransaction, updateTransaction, deleteTransaction, refreshTransactions } = useTransactions(
+  const { transactions, loading, addTransaction, updateTransaction, deleteTransaction, refresh } = useTransactions(
     user?.id || ''
   );
 
@@ -85,7 +85,7 @@ export default function TransactionsPage() {
           type: 'success',
           message: result.message || `Imported ${result.imported} transactions!`,
         });
-        refreshTransactions();
+        refresh();
       } else {
         setImportStatus({
           type: 'error',
