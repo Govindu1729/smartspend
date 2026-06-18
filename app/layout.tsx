@@ -1,5 +1,4 @@
 import '@/app/globals.css';
-import '@/app/globals.css';
 
 import type { Metadata, Viewport } from 'next';
 import { createClient } from '@/lib/supabase/server';
