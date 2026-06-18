@@ -66,7 +66,7 @@ export function BudgetPlanner({ userId, categories, initialData, onSubmit }: Bud
                 </SelectItem>
               ))
             ) : (
-              <SelectItem value="" disabled>No categories available</SelectItem>
+              <SelectItem value="none" disabled>No categories available</SelectItem>
             )}
           </SelectContent>
         </Select>
