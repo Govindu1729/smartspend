@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useTransactions } from '@/hooks/use-transactions';
@@ -9,12 +9,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Download, Filter, X } from 'lucide-react';
+import { Plus, Download, Upload, Filter, X, CheckCircle, AlertCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 export default function TransactionsPage() {
   const [user, setUser] = useState<any>(null);
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const [importStatus, setImportStatus] = useState<{type: 'success' | 'error'; message: string} | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [filters, setFilters] = useState({
     type: 'all',
     category: '',
@@ -32,7 +35,7 @@ export default function TransactionsPage() {
     });
   }, []);
 
-  const { transactions, loading, addTransaction, updateTransaction, deleteTransaction } = useTransactions(
+  const { transactions, loading, addTransaction, updateTransaction, deleteTransaction, refreshTransactions } = useTransactions(
     user?.id || ''
   );
 
@@ -55,6 +58,51 @@ export default function TransactionsPage() {
     window.open(`/api/export/pdf?user_id=${user.id}&format=pdf`, '_blank');
   };
 
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsImporting(true);
+    setImportStatus(null);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch('/api/import', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        setImportStatus({
+          type: 'success',
+          message: result.message || `Imported ${result.imported} transactions!`,
+        });
+        refreshTransactions();
+      } else {
+        setImportStatus({
+          type: 'error',
+          message: result.error || 'Import failed',
+        });
+      }
+    } catch (error) {
+      setImportStatus({
+        type: 'error',
+        message: 'Failed to import file. Check the format.',
+      });
+    } finally {
+      setIsImporting(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
   const clearFilters = () => {
     setFilters({ type: 'all', category: '', search: '', dateFrom: '', dateTo: '' });
   };
@@ -66,6 +114,17 @@ export default function TransactionsPage() {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Transactions</h1>
         <div className="flex gap-2">
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            accept=".csv,.txt"
+            className="hidden"
+          />
+          <Button variant="outline" onClick={handleImportClick} disabled={isImporting}>
+            <Upload className="mr-2 h-4 w-4" />
+            {isImporting ? 'Importing...' : 'Import CSV'}
+          </Button>
           <Button variant="outline" onClick={handleExportCSV}>
             <Download className="mr-2 h-4 w-4" /> Export CSV
           </Button>
@@ -93,6 +152,19 @@ export default function TransactionsPage() {
           </Dialog>
         </div>
       </div>
+
+      {/* Import Status */}
+      {importStatus && (
+        <div className={`mb-4 p-4 rounded-lg flex items-center gap-2 ${
+          importStatus.type === 'success' ? 'bg-green-50 dark:bg-green-950 text-green-800 dark:text-green-200' : 'bg-red-50 dark:bg-red-950 text-red-800 dark:text-red-200'
+        }`}>
+          {importStatus.type === 'success' ? <CheckCircle className="h-5 w-5" /> : <AlertCircle className="h-5 w-5" />}
+          <span className="text-sm">{importStatus.message}</span>
+          <button onClick={() => setImportStatus(null)} className="ml-auto">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="bg-card rounded-lg p-4 mb-6 space-y-4">
