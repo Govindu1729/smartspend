@@ -1,59 +1,112 @@
-import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient, getAuthenticatedUser } from '@/lib/supabase/server';
+import { createBudgetSchema, updateBudgetSchema, uuidSchema } from '@/lib/schemas';
 import { format, startOfMonth } from 'date-fns';
 
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const userId = searchParams.get('user_id');
-  const month = searchParams.get('month') || format(startOfMonth(new Date()), 'yyyy-MM-dd');
-
-  if (!userId) {
-    return NextResponse.json({ error: 'User ID required' }, { status: 400 });
+export async function GET(request: NextRequest) {
+  const user = await getAuthenticatedUser();
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { data: budgets, error } = await supabaseAdmin
+  const { searchParams } = new URL(request.url);
+  const month =
+    searchParams.get('month') || format(startOfMonth(new Date()), 'yyyy-MM-dd');
+
+  const supabase = await createClient();
+
+  const { data: budgets, error } = await supabase
     .from('budgets')
     .select('*, categories(name, icon)')
-    .eq('user_id', userId)
+    .eq('user_id', user.id)
     .eq('month', month);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  // Calculate spent amount for each budget
-  const budgetsWithSpent = await Promise.all(
-    budgets.map(async (budget: any) => {
-      const { data: transactions } = await supabaseAdmin
-        .from('transactions')
-        .select('amount')
-        .eq('user_id', userId)
-        .eq('category_id', budget.category_id)
-        .eq('type', 'expense')
-        .gte('date', month)
-        .lt('date', format(new Date(new Date(month).getFullYear(), new Date(month).getMonth() + 1, 1), 'yyyy-MM-dd'));
+  if (!budgets || budgets.length === 0) {
+    return NextResponse.json([]);
+  }
 
-      const spent = transactions?.reduce((sum, t) => sum + t.amount, 0) || 0;
-      return { ...budget, spent };
-    })
+  // Single query for ALL category spend this month, then group in JS — fixes N+1
+  const monthStart = month;
+  const monthEnd = format(
+    new Date(new Date(month).getFullYear(), new Date(month).getMonth() + 1, 0),
+    'yyyy-MM-dd'
   );
+  const categoryIds = budgets.map((b) => b.category_id);
+
+  const { data: txData, error: txError } = await supabase
+    .from('transactions')
+    .select('category_id, amount')
+    .eq('user_id', user.id)
+    .in('category_id', categoryIds)
+    .eq('type', 'expense')
+    .gte('date', monthStart)
+    .lte('date', monthEnd);
+
+  if (txError) {
+    return NextResponse.json({ error: txError.message }, { status: 500 });
+  }
+
+  const spendByCategory: Record<string, number> = {};
+  (txData || []).forEach((t: { category_id: string; amount: number }) => {
+    spendByCategory[t.category_id] = (spendByCategory[t.category_id] || 0) + t.amount;
+  });
+
+  const budgetsWithSpent = budgets.map((budget) => ({
+    ...budget,
+    spent: spendByCategory[budget.category_id] || 0,
+  }));
 
   return NextResponse.json(budgetsWithSpent);
 }
 
-export async function POST(request: Request) {
-  const body = await request.json();
-  const { user_id, category_id, month, amount, alert_threshold } = body;
-
-  if (!user_id || !category_id || !month || !amount) {
-    return NextResponse.json({ error: 'Required fields missing' }, { status: 400 });
+export async function POST(request: NextRequest) {
+  const user = await getAuthenticatedUser();
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  // Upsert budget (create or update)
-  const { data, error } = await supabaseAdmin
+  const json = await request.json().catch(() => null);
+  if (!json) {
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
+  }
+
+  const parsed = createBudgetSchema.safeParse(json);
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+  }
+  const { category_id, month, amount, alert_threshold } = parsed.data;
+
+  const supabase = await createClient();
+
+  // Verify category belongs to the user before upserting
+  const { data: category, error: catErr } = await supabase
+    .from('categories')
+    .select('id')
+    .eq('id', category_id)
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  if (catErr) {
+    return NextResponse.json({ error: catErr.message }, { status: 500 });
+  }
+  if (!category) {
+    return NextResponse.json({ error: 'Category not found' }, { status: 404 });
+  }
+
+  const { data, error } = await supabase
     .from('budgets')
     .upsert(
-      { user_id, category_id, month, amount, alert_threshold: alert_threshold || 0.8 },
+      {
+        user_id: user.id,
+        category_id,
+        month,
+        amount,
+        alert_threshold: alert_threshold ?? 0.8,
+      },
       { onConflict: 'user_id, category_id, month' }
     )
     .select()
@@ -66,14 +119,36 @@ export async function POST(request: Request) {
   return NextResponse.json(data);
 }
 
-export async function PUT(request: Request) {
-  const body = await request.json();
-  const { id, ...updates } = body;
+export async function PUT(request: NextRequest) {
+  const user = await getAuthenticatedUser();
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
-  const { data, error } = await supabaseAdmin
+  const json = await request.json().catch(() => null);
+  if (!json) {
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
+  }
+
+  const parsed = updateBudgetSchema.safeParse(json);
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+  }
+  const { id, ...updates } = parsed.data;
+
+  const patch: Record<string, unknown> = {};
+  if (updates.amount !== undefined) patch.amount = updates.amount;
+  if (updates.alert_threshold !== undefined) patch.alert_threshold = updates.alert_threshold;
+  if (Object.keys(patch).length === 0) {
+    return NextResponse.json({ error: 'No fields to update' }, { status: 400 });
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
     .from('budgets')
-    .update(updates)
+    .update(patch)
     .eq('id', id)
+    .eq('user_id', user.id)
     .select()
     .single();
 
@@ -84,15 +159,26 @@ export async function PUT(request: Request) {
   return NextResponse.json(data);
 }
 
-export async function DELETE(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const id = searchParams.get('id');
-
-  if (!id) {
-    return NextResponse.json({ error: 'Budget ID required' }, { status: 400 });
+export async function DELETE(request: NextRequest) {
+  const user = await getAuthenticatedUser();
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { error } = await supabaseAdmin.from('budgets').delete().eq('id', id);
+  const { searchParams } = new URL(request.url);
+  const idRaw = searchParams.get('id');
+  const parsed = uuidSchema.safeParse(idRaw);
+  if (!parsed.success) {
+    return NextResponse.json({ error: 'Invalid budget ID' }, { status: 400 });
+  }
+  const id = parsed.data;
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from('budgets')
+    .delete()
+    .eq('id', id)
+    .eq('user_id', user.id);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

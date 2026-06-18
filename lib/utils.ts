@@ -1,17 +1,55 @@
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { format, parseISO } from 'date-fns';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
 export function formatCurrency(amount: number, currency: string = 'INR'): string {
-  return new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency,
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(amount);
+  // Map common user-friendly currency codes to Intl locales
+  const localeMap: Record<string, string> = {
+    INR: 'en-IN',
+    USD: 'en-US',
+    EUR: 'en-IE',
+    GBP: 'en-GB',
+    JPY: 'ja-JP',
+    AUD: 'en-AU',
+    CAD: 'en-CA',
+    SGD: 'en-SG',
+    AED: 'ar-AE',
+  };
+  const locale = localeMap[currency] || 'en-IN';
+  try {
+    return new Intl.NumberFormat(locale, {
+      style: 'currency',
+      currency,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }).format(amount);
+  } catch {
+    // Fallback if currency code is invalid
+    return `${currency} ${amount.toLocaleString('en-IN')}`;
+  }
+}
+
+/**
+ * Get the currency symbol for a currency code (without formatting a number).
+ * Useful for placeholders like "₹{amount}".
+ */
+export function getCurrencySymbol(currency: string = 'INR'): string {
+  try {
+    const parts = new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).formatToParts(0);
+    const symbol = parts.find((p) => p.type === 'currency')?.value;
+    return symbol || currency;
+  } catch {
+    return currency;
+  }
 }
 
 export function formatDate(date: string | Date): string {
@@ -38,7 +76,7 @@ export function getMonthDateRange(date: Date = new Date()) {
   };
 }
 
-export function groupTransactionsByCategory(transactions: any[]) {
+export function groupTransactionsByCategory(transactions: Array<{ amount: number; type?: string; categories?: { name?: string } | null }>) {
   const groups: Record<string, { name: string; total: number; count: number }> = {};
 
   transactions.forEach((t) => {
@@ -53,7 +91,7 @@ export function groupTransactionsByCategory(transactions: any[]) {
   return Object.values(groups).sort((a, b) => b.total - a.total);
 }
 
-export function groupTransactionsByMonth(transactions: any[]) {
+export function groupTransactionsByMonth(transactions: Array<{ amount: number; type: "income" | "expense"; date: string }>) {
   const groups: Record<string, { month: string; income: number; expense: number }> = {};
 
   transactions.forEach((t) => {
@@ -61,7 +99,8 @@ export function groupTransactionsByMonth(transactions: any[]) {
     if (!groups[monthKey]) {
       groups[monthKey] = { month: monthKey, income: 0, expense: 0 };
     }
-    groups[monthKey][t.type] += t.amount;
+    const key = t.type as "income" | "expense";
+    groups[monthKey][key] += t.amount;
   });
 
   return Object.values(groups).sort((a, b) => a.month.localeCompare(b.month));

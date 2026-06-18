@@ -32,7 +32,7 @@ export async function getSession(request: NextRequest) {
           };
         }).filter(cookie => cookie.name);
       },
-      setAll: (cookiesToSet) => {
+      setAll: (cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) => {
         const cookieHeader = cookiesToSet
           .map(({ name, value, options }) => {
             let cookie = `${name}=${value}`;

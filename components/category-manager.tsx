@@ -23,7 +23,7 @@ export function CategoryManager({ userId }: CategoryManagerProps) {
     if (editingCategory) {
       await updateCategory(editingCategory.id, { name, icon });
     } else {
-      await addCategory({ user_id: userId, name, icon });
+      await addCategory({ user_id: userId, name, icon, is_default: false });
     }
     setName('');
     setIcon('tag');

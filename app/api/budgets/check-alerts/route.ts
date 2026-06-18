@@ -1,17 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getAuthenticatedUser } from '@/lib/supabase/server';
 import { checkBudgetAlerts } from '@/lib/budget-alerts';
+import { uuidSchema } from '@/lib/schemas';
 
 export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const userId = searchParams.get('user_id');
-  const categoryId = searchParams.get('category_id');
-
-  if (!userId) {
-    return NextResponse.json({ error: 'User ID required' }, { status: 400 });
+  const user = await getAuthenticatedUser();
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  const { searchParams } = new URL(request.url);
+  const categoryIdRaw = searchParams.get('category_id');
+  const categoryId = categoryIdRaw
+    ? uuidSchema.safeParse(categoryIdRaw).data ?? undefined
+    : undefined;
+
   try {
-    const alerts = await checkBudgetAlerts(userId, categoryId || undefined);
+    const alerts = await checkBudgetAlerts(user.id, categoryId);
     const alertsOnly = alerts.filter((a) => a.shouldAlert);
 
     return NextResponse.json({
@@ -19,8 +24,9 @@ export async function GET(request: NextRequest) {
       count: alertsOnly.length,
       hasAlerts: alertsOnly.length > 0,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('Error checking budget alerts:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

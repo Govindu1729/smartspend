@@ -1,5 +1,5 @@
 'use client';
-import { Alert, AlertTriangle } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -16,7 +16,7 @@ export function BudgetAlertBanner({ alerts, onDismiss }: BudgetAlertBannerProps)
   }
 
   return (
-    <div className="space-y-3 mb-6">
+    <div className="space-y-3 mb-6" role="alert" aria-live="assertive">
       {alerts.map((alert) => {
         const isExceeded = alert.percentage >= 100;
         const isCritical = alert.percentage >= 90;

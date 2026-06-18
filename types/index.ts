@@ -8,6 +8,8 @@ export type Transaction = {
   date: string; // YYYY-MM-DD
   is_recurring: boolean;
   recurring_interval?: 'daily' | 'weekly' | 'monthly' | 'yearly';
+  last_recurred_at?: string | null;
+  created_at?: string;
   categories?: { name: string; icon: string };
 };
 

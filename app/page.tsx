@@ -114,7 +114,7 @@ export default async function Page() {
         </TabsContent>
 
         <TabsContent value="budgets" className="mt-4">
-          <BudgetOverview userId={user.id} budgets={budgets} />
+          <BudgetOverview userId={user.id} budgets={budgets ?? []} />
         </TabsContent>
       </Tabs>
     </main>

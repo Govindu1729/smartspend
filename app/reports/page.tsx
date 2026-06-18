@@ -5,6 +5,8 @@ import { createClient } from '@/lib/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   BarChart,
   Bar,
@@ -20,14 +22,29 @@ import {
   LineChart,
   Line,
 } from 'recharts';
-import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
+import { format, subMonths } from 'date-fns';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#FF6B6B', '#4ECDC4', '#45B7D1'];
 
+interface ReportData {
+  monthlyBreakdown: Array<{ month: string; income: number; expense: number }>;
+  categoryBreakdown: Array<{ name: string; value: number }>;
+  dailySpending: Array<{ date: string; amount: number }>;
+  incomeVsExpense: Array<{ month: string; income: number; expense: number }>;
+}
+
+interface AuthUser {
+  id: string;
+  email?: string;
+  user_metadata?: Record<string, unknown>;
+}
+
 export default function ReportsPage() {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [period, setPeriod] = useState('6months');
-  const [reportData, setReportData] = useState<any>({
+  const [customStart, setCustomStart] = useState<string>('');
+  const [customEnd, setCustomEnd] = useState<string>('');
+  const [reportData, setReportData] = useState<ReportData>({
     monthlyBreakdown: [],
     categoryBreakdown: [],
     dailySpending: [],
@@ -38,105 +55,143 @@ export default function ReportsPage() {
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) router.push('/login');
-      else {
-        setUser(user);
-        fetchReportData(user.id, period);
+      if (!user) {
+        router.push('/login');
+        return;
       }
+      setUser(user as AuthUser);
+      fetchReportData(user.id, period, customStart, customEnd);
     });
-  }, [period]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [period, customStart, customEnd]);
 
-  const fetchReportData = async (userId: string, selectedPeriod: string) => {
-    const endDate = new Date();
+  const fetchReportData = async (
+    userId: string,
+    selectedPeriod: string,
+    custStart?: string,
+    custEnd?: string
+  ) => {
+    const endDate = custEnd ? new Date(custEnd) : new Date();
     let startDate = new Date();
 
-    switch (selectedPeriod) {
-      case '1month':
-        startDate = subMonths(endDate, 1);
-        break;
-      case '3months':
-        startDate = subMonths(endDate, 3);
-        break;
-      case '6months':
-        startDate = subMonths(endDate, 6);
-        break;
-      case '1year':
-        startDate = subMonths(endDate, 12);
-        break;
+    if (selectedPeriod === 'custom') {
+      if (!custStart || !custEnd) return;
+      startDate = new Date(custStart);
+    } else {
+      switch (selectedPeriod) {
+        case '1month': startDate = subMonths(endDate, 1); break;
+        case '3months': startDate = subMonths(endDate, 3); break;
+        case '6months': startDate = subMonths(endDate, 6); break;
+        case '1year': startDate = subMonths(endDate, 12); break;
+      }
     }
 
+    const startStr = format(startDate, 'yyyy-MM-dd');
+    const endStr = format(endDate, 'yyyy-MM-dd');
+
     const response = await fetch(
-      `/api/transactions?user_id=${userId}&start=${startDate.toISOString()}&end=${endDate.toISOString()}`
+      `/api/transactions?start=${startStr}&end=${endStr}`,
+      { cache: 'no-store' }
     );
-    const transactions = await response.json();
+    if (!response.ok) return;
+    const transactions: Array<{
+      amount: number;
+      type: 'income' | 'expense';
+      date: string;
+      categories?: { name: string } | null;
+    }> = await response.json();
 
     // Process monthly breakdown
-    const monthlyData: any = {};
-    transactions.forEach((t: any) => {
+    const monthlyData: Record<string, { month: string; income: number; expense: number }> = {};
+    transactions.forEach((t) => {
       const month = format(new Date(t.date), 'MMM yyyy');
-      if (!monthlyData[month]) {
-        monthlyData[month] = { month, income: 0, expense: 0 };
-      }
+      if (!monthlyData[month]) monthlyData[month] = { month, income: 0, expense: 0 };
       monthlyData[month][t.type] += t.amount;
     });
 
     // Process category breakdown
-    const categoryData: any = {};
+    const categoryData: Record<string, { name: string; value: number }> = {};
     transactions
-      .filter((t: any) => t.type === 'expense')
-      .forEach((t: any) => {
+      .filter((t) => t.type === 'expense')
+      .forEach((t) => {
         const cat = t.categories?.name || 'Uncategorized';
-        if (!categoryData[cat]) {
-          categoryData[cat] = { name: cat, value: 0 };
-        }
+        if (!categoryData[cat]) categoryData[cat] = { name: cat, value: 0 };
         categoryData[cat].value += t.amount;
       });
 
     // Process daily spending
-    const dailyData: any = {};
+    const dailyData: Record<string, { date: string; amount: number }> = {};
     transactions
-      .filter((t: any) => t.type === 'expense')
-      .forEach((t: any) => {
+      .filter((t) => t.type === 'expense')
+      .forEach((t) => {
         const day = format(new Date(t.date), 'MMM dd');
-        if (!dailyData[day]) {
-          dailyData[day] = { date: day, amount: 0 };
-        }
+        if (!dailyData[day]) dailyData[day] = { date: day, amount: 0 };
         dailyData[day].amount += t.amount;
       });
 
+    const monthSort = (a: { month: string }, b: { month: string }) =>
+      new Date(a.month).getTime() - new Date(b.month).getTime();
+    const daySort = (a: { date: string }, b: { date: string }) =>
+      new Date(a.date).getTime() - new Date(b.date).getTime();
+
+    const monthlyArr = Object.values(monthlyData).sort(monthSort);
     setReportData({
-      monthlyBreakdown: Object.values(monthlyData).sort(
-        (a: any, b: any) => new Date(a.month).getTime() - new Date(b.month).getTime()
-      ),
-      categoryBreakdown: Object.values(categoryData).sort((a: any, b: any) => b.value - a.value),
-      dailySpending: Object.values(dailyData).sort(
-        (a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime()
-      ),
-      incomeVsExpense: Object.values(monthlyData).sort(
-        (a: any, b: any) => new Date(a.month).getTime() - new Date(b.month).getTime()
-      ),
+      monthlyBreakdown: monthlyArr,
+      categoryBreakdown: Object.values(categoryData).sort((a, b) => b.value - a.value),
+      dailySpending: Object.values(dailyData).sort(daySort),
+      incomeVsExpense: monthlyArr,
     });
   };
 
   if (!user) return null;
 
-  const totalExpense = reportData.categoryBreakdown.reduce((sum: number, item: any) => sum + item.value, 0);
+  const totalExpense = reportData.categoryBreakdown.reduce((sum, item) => sum + item.value, 0);
 
   return (
     <main className="container mx-auto p-4 max-w-6xl">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Reports & Analytics</h1>
-        <Select value={period} onValueChange={setPeriod}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Select period" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="1month">Last Month</SelectItem>
-            <SelectItem value="3months">Last 3 Months</SelectItem>
-            <SelectItem value="6months">Last 6 Months</SelectItem>
-            <SelectItem value="1year">Last Year</SelectItem>
-          </SelectContent>
-        </Select>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+        <h1 className="text-3xl font-bold">Reports &amp; Analytics</h1>
+        <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+          <Select value={period} onValueChange={setPeriod}>
+            <SelectTrigger className="w-full sm:w-[180px]" aria-label="Select period">
+              <SelectValue placeholder="Select period" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="1month">Last Month</SelectItem>
+              <SelectItem value="3months">Last 3 Months</SelectItem>
+              <SelectItem value="6months">Last 6 Months</SelectItem>
+              <SelectItem value="1year">Last Year</SelectItem>
+              <SelectItem value="custom">Custom Range</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {period === 'custom' && (
+            <div className="flex items-end gap-2">
+              <div className="space-y-1">
+                <Label htmlFor="from-date" className="text-xs">From</Label>
+                <Input
+                  id="from-date"
+                  type="date"
+                  value={customStart}
+                  onChange={(e) => setCustomStart(e.target.value)}
+                  className="w-[150px]"
+                  max={customEnd || undefined}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="to-date" className="text-xs">To</Label>
+                <Input
+                  id="to-date"
+                  type="date"
+                  value={customEnd}
+                  onChange={(e) => setCustomEnd(e.target.value)}
+                  className="w-[150px]"
+                  min={customStart || undefined}
+                />
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       <Tabs defaultValue="overview" className="space-y-4">
@@ -184,7 +239,7 @@ export default function ReportsPage() {
                       fill="#8884d8"
                       dataKey="value"
                     >
-                      {reportData.categoryBreakdown.map((entry: any, index: number) => (
+                      {reportData.categoryBreakdown.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
@@ -203,25 +258,30 @@ export default function ReportsPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {reportData.categoryBreakdown.map((category: any, index: number) => (
+                {reportData.categoryBreakdown.map((category, index) => (
                   <div key={category.name} className="space-y-2">
                     <div className="flex justify-between">
                       <span className="font-medium">{category.name}</span>
                       <span className="text-muted-foreground">
-                        ₹{category.value.toLocaleString()} ({((category.value / totalExpense) * 100).toFixed(1)}%)
+                        ₹{category.value.toLocaleString()} ({totalExpense > 0 ? ((category.value / totalExpense) * 100).toFixed(1) : '0'}%)
                       </span>
                     </div>
                     <div className="w-full bg-secondary rounded-full h-2">
                       <div
                         className="h-2 rounded-full"
                         style={{
-                          width: `${(category.value / totalExpense) * 100}%`,
+                          width: `${totalExpense > 0 ? (category.value / totalExpense) * 100 : 0}%`,
                           backgroundColor: COLORS[index % COLORS.length],
                         }}
                       />
                     </div>
                   </div>
                 ))}
+                {reportData.categoryBreakdown.length === 0 && (
+                  <p className="text-center text-muted-foreground py-8">
+                    No expense data for this period.
+                  </p>
+                )}
               </div>
             </CardContent>
           </Card>

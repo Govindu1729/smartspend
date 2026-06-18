@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  build:
+    name: Lint, Type-check & Build
+    runs-on: ubuntu-latest
+
+    env:
+      # Dummy values so `next build` doesn't fail on missing env vars at build time.
+      # Real values are injected at runtime by the deployment platform.
+      NEXT_PUBLIC_SUPABASE_URL: https://dummy.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: dummy-anon-key
+      SUPABASE_SERVICE_ROLE_KEY: dummy-service-key
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      GEMINI_API_KEY: dummy-gemini-key
+      NEXT_PUBLIC_VAPID_PUBLIC_KEY: dummy-vapid-public
+      VAPID_PRIVATE_KEY: dummy-vapid-private
+      VAPID_EMAIL: mailto:dummy@example.com
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type-check
+        run: npx tsc --noEmit
+
+      - name: Build
+        run: npm run build

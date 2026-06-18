@@ -33,9 +33,10 @@ export default function SignupPage() {
     }
 
     if (data.user) {
+      const userId = data.user.id;
       // Create profile
       await supabase.from('profiles').insert({
-        id: data.user.id,
+        id: userId,
         full_name: fullName,
       });
 
@@ -53,7 +54,7 @@ export default function SignupPage() {
 
       await supabase.from('categories').insert(
         defaultCategories.map(cat => ({
-          user_id: data.user.id,
+          user_id: userId,
           name: cat.name,
           icon: cat.icon,
           is_default: true,

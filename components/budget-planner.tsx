@@ -53,7 +53,7 @@ export function BudgetPlanner({ userId, categories, initialData, onSubmit }: Bud
         <Label htmlFor="category" className="font-semibold mb-2 block">Select Category</Label>
         <Select
           defaultValue={initialData?.category_id || ''}
-          onValueChange={(value) => setValue('category_id', value)}
+          onValueChange={(value: string) => setValue('category_id', value)}
         >
           <SelectTrigger>
             <SelectValue placeholder="Choose a category..." />

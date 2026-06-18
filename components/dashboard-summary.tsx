@@ -7,10 +7,16 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pi
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
 
 export function DashboardSummary({ userId }: { userId: string }) {
-  const [stats, setStats] = useState({ 
-    totalIncome: 0, 
-    totalExpense: 0, 
-    savingsRate: 0, 
+  const [stats, setStats] = useState<{
+    totalIncome: number;
+    totalExpense: number;
+    savingsRate: number;
+    monthlyTrend: Array<{ month: string; income: number; expense: number }>;
+    topCategories: Array<{ name: string; value: number }>;
+  }>({
+    totalIncome: 0,
+    totalExpense: 0,
+    savingsRate: 0,
     monthlyTrend: [],
     topCategories: []
   });
@@ -20,7 +26,7 @@ export function DashboardSummary({ userId }: { userId: string }) {
     const fetchStats = async () => {
       try {
         setLoading(true);
-        const res = await fetch(`/api/transactions/summary?user_id=${userId}`);
+        const res = await fetch(`/api/transactions/summary`);
         const data = await res.json();
         setStats(data);
       } catch (error) {

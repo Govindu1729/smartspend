@@ -107,7 +107,7 @@ export default function TransactionsPage() {
           )}
         </div>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Select value={filters.type} onValueChange={(value) => setFilters({ ...filters, type: value })}>
+          <Select value={filters.type} onValueChange={(value: string) => setFilters({ ...filters, type: value })}>
             <SelectTrigger>
               <SelectValue placeholder="All Types" />
             </SelectTrigger>

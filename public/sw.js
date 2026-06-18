@@ -1,74 +1,91 @@
-// public/sw.js
-const CACHE_NAME = 'smartspend-v1';
-const DYNAMIC_CACHE = 'smartspend-dynamic-v1';
+// public/sw.js — SmartSpend service worker
+//
+// Strategies:
+//   - Static assets (_next/static, icons):  cache-first
+//   - API calls:                             network-first (falls back to cache)
+//   - Page navigations:                      network-first (falls back to cached shell)
+//
+// Push notifications + notification clicks are handled at the bottom.
+
+const CACHE_VERSION = 'v2';
+const STATIC_CACHE = `smartspend-static-${CACHE_VERSION}`;
+const DYNAMIC_CACHE = `smartspend-dynamic-${CACHE_VERSION}`;
 
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',
+  '/offline',
   '/icons/icon-192x192.png',
   '/icons/icon-512x512.png',
+  '/icons/maskable-512x512.png',
 ];
 
-// Install event
+// ---------------------------------------------------------------------------
+// Install — pre-cache the app shell
+// ---------------------------------------------------------------------------
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      console.log('Caching static assets');
-      return cache.addAll(STATIC_ASSETS);
-    })
+    caches
+      .open(STATIC_CACHE)
+      // Use individual addAll with error tolerance so a single missing
+      // asset doesn't break the entire install.
+      .then((cache) =>
+        Promise.allSettled(STATIC_ASSETS.map((url) => cache.add(url)))
+      )
+      .then(() => self.skipWaiting())
   );
-  self.skipWaiting();
 });
 
-// Activate event
+// ---------------------------------------------------------------------------
+// Activate — clean up old caches
+// ---------------------------------------------------------------------------
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames
-          .filter((name) => name !== CACHE_NAME && name !== DYNAMIC_CACHE)
-          .map((name) => caches.delete(name))
-      );
-    })
+    caches
+      .keys()
+      .then((names) =>
+        Promise.all(
+          names
+            .filter((name) => name !== STATIC_CACHE && name !== DYNAMIC_CACHE)
+            .map((name) => caches.delete(name))
+        )
+      )
+      .then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
-// Fetch event with network-first strategy for API calls
+// ---------------------------------------------------------------------------
+// Fetch — apply strategies based on request type
+// ---------------------------------------------------------------------------
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Skip non-GET requests and Supabase auth calls
-  if (request.method !== 'GET' || url.pathname.includes('/auth/')) {
+  // Only handle GET. Skip Supabase auth + cross-origin requests.
+  if (
+    request.method !== 'GET' ||
+    url.origin !== self.location.origin ||
+    url.pathname.includes('/auth/')
+  ) {
     return;
   }
 
-  // API calls - Network first, then cache
-  if (url.pathname.startsWith('/api/')) {
-    event.respondWith(networkFirstStrategy(request));
-    return;
-  }
-
-  // Static assets - Cache first
+  // Static assets — cache-first
   if (
     url.pathname.startsWith('/_next/static') ||
     url.pathname.startsWith('/icons/')
   ) {
-    event.respondWith(cacheFirstStrategy(request));
+    event.respondWith(cacheFirst(request));
     return;
   }
 
-  // Page navigations - Network first
-  event.respondWith(networkFirstStrategy(request));
+  // API + page navigations — network-first (fall back to cache)
+  event.respondWith(networkFirst(request));
 });
 
-// Cache first strategy
-async function cacheFirstStrategy(request) {
-  const cachedResponse = await caches.match(request);
-  if (cachedResponse) {
-    return cachedResponse;
-  }
+async function cacheFirst(request) {
+  const cached = await caches.match(request);
+  if (cached) return cached;
   try {
     const networkResponse = await fetch(request);
     if (networkResponse.ok) {
@@ -76,171 +93,120 @@ async function cacheFirstStrategy(request) {
       cache.put(request, networkResponse.clone());
     }
     return networkResponse;
-  } catch (error) {
+  } catch (err) {
     return new Response('You are offline', {
       status: 503,
       statusText: 'Service Unavailable',
+      headers: { 'Content-Type': 'text/plain' },
     });
   }
 }
 
-// Network first strategy
-async function networkFirstStrategy(request) {
+async function networkFirst(request) {
   try {
     const networkResponse = await fetch(request);
-    if (networkResponse.ok) {
+    if (networkResponse.ok && request.mode === 'navigate') {
       const cache = await caches.open(DYNAMIC_CACHE);
       cache.put(request, networkResponse.clone());
     }
     return networkResponse;
-  } catch (error) {
-    const cachedResponse = await caches.match(request);
-    if (cachedResponse) {
-      return cachedResponse;
+  } catch (err) {
+    const cached = await caches.match(request);
+    if (cached) return cached;
+
+    // For navigations, fall back to cached root (app shell) if available
+    if (request.mode === 'navigate') {
+      const rootCache = await caches.match('/');
+      if (rootCache) return rootCache;
     }
+
     return new Response('You are offline', {
       status: 503,
       statusText: 'Service Unavailable',
+      headers: { 'Content-Type': 'text/plain' },
     });
   }
 }
 
-// Handle push notifications
+// ---------------------------------------------------------------------------
+// Push notifications
+// ---------------------------------------------------------------------------
 self.addEventListener('push', (event) => {
-  if (!event.data) {
-    console.log('Push notification received but no data');
-    return;
-  }
-
-  let notificationData = {
+  let data = {
     title: 'SmartSpend',
     body: 'You have a new notification',
     icon: '/icons/icon-192x192.png',
     badge: '/icons/icon-192x192.png',
+    url: '/',
   };
 
-  try {
-    const data = event.data.json();
-    notificationData = {
-      title: data.title || notificationData.title,
-      body: data.body || notificationData.body,
-      icon: data.icon || notificationData.icon,
-      badge: data.badge || notificationData.badge,
-    };
-  } catch (error) {
-    notificationData.body = event.data.text();
+  if (event.data) {
+    try {
+      data = { ...data, ...event.data.json() };
+    } catch {
+      data.body = event.data.text();
+    }
   }
 
-  event.waitUntil(
-    self.registration.showNotification(notificationData.title, {
-      body: notificationData.body,
-      icon: notificationData.icon,
-      badge: notificationData.badge,
-      tag: 'smartspend-notification',
-      requireInteraction: true,
-      actions: [
-        {
-          action: 'open',
-          title: 'Open SmartSpend',
-        },
-        {
-          action: 'close',
-          title: 'Dismiss',
-        },
-      ],
-    })
-  );
+  const options = {
+    body: data.body,
+    icon: data.icon,
+    badge: data.badge,
+    vibrate: [100, 50, 100],
+    tag: 'smartspend-notification',
+    requireInteraction: true,
+    data: {
+      dateOfArrival: Date.now(),
+      url: data.url || data.data?.url || '/',
+      ...data.data,
+    },
+    actions: [
+      { action: 'open', title: 'Open App' },
+      { action: 'close', title: 'Dismiss' },
+    ],
+  };
+
+  event.waitUntil(self.registration.showNotification(data.title, options));
 });
 
-// Handle notification clicks
+// ---------------------------------------------------------------------------
+// Notification click
+// ---------------------------------------------------------------------------
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
 
-  if (event.action === 'close') {
-    return;
-  }
+  if (event.action === 'close') return;
 
-  // Focus on app if already open, otherwise open new window
+  const targetUrl = event.notification.data?.url || '/';
+
   event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
-      for (let i = 0; i < windowClients.length; i++) {
-        const client = windowClients[i];
-        if (client.url === '/' && 'focus' in client) {
-          return client.focus();
+    clients
+      .matchAll({ type: 'window', includeUncontrolled: true })
+      .then((clientList) => {
+        for (const client of clientList) {
+          if (client.url.includes(targetUrl) && 'focus' in client) {
+            return client.focus();
+          }
         }
-      }
-      if (clients.openWindow) {
-        return clients.openWindow('/');
-      }
-    })
+        if (clients.openWindow) {
+          return clients.openWindow(targetUrl);
+        }
+      })
   );
 });
 
-// Handle notification close
+// ---------------------------------------------------------------------------
+// Notification close (analytics opportunity)
+// ---------------------------------------------------------------------------
 self.addEventListener('notificationclose', (event) => {
   console.log('Notification closed:', event.notification.tag);
 });
 
-    return new Response(
-      JSON.stringify({ error: 'You are offline' }),
-      {
-        status: 503,
-        headers: { 'Content-Type': 'application/json' },
-      }
-    );
-  }
-}
-
-// Push notification event
-self.addEventListener('push', (event) => {
-  if (event.data) {
-    const data = event.data.json();
-    const options = {
-      body: data.body,
-      icon: data.icon || '/icons/icon-192x192.png',
-      badge: data.badge || '/icons/icon-192x192.png',
-      vibrate: [100, 50, 100],
-      data: {
-        dateOfArrival: Date.now(),
-        primaryKey: '1',
-        ...data.data,
-      },
-      actions: [
-        {
-          action: 'open',
-          title: 'Open App',
-        },
-        {
-          action: 'close',
-          title: 'Close',
-        },
-      ],
-    };
-
-    event.waitUntil(
-      self.registration.showNotification(data.title || 'SmartSpend', options)
-    );
-  }
-});
-
-// Notification click event
-self.addEventListener('notificationclick', (event) => {
-  event.notification.close();
-
-  if (event.action === 'open' || !event.action) {
-    event.waitUntil(
-      clients
-        .matchAll({ type: 'window', includeUncontrolled: true })
-        .then((clientList) => {
-          for (const client of clientList) {
-            if (client.url && 'focus' in client) {
-              return client.focus();
-            }
-          }
-          if (clients.openWindow) {
-            return clients.openWindow('/');
-          }
-        })
-    );
+// ---------------------------------------------------------------------------
+// Message channel — allow page to trigger skipWaiting for instant updates
+// ---------------------------------------------------------------------------
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
   }
 });

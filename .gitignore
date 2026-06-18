@@ -1,6 +1,50 @@
+# dependencies
 node_modules/
+/.pnp
+.pnp.js
+
+# next.js
 .next/
-.env.local
-.env
-*.log
+out/
+build/
+dist/
+
+# production
+*.tsbuildinfo
+
+# misc
 .DS_Store
+*.pem
+
+# debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+*.log
+
+# local env files
+.env
+.env.local
+.env.*.local
+
+# secrets / keys — NEVER commit
+Vapid Keys
+*vapid*
+*.key
+*.pem
+secrets/
+
+# editor
+.vscode/
+.idea/
+*.swp
+
+# os
+Thumbs.db
+
+# test coverage
+coverage/
+
+# vercel
+.vercel

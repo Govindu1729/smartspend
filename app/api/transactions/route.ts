@@ -1,24 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, getAuthenticatedUser } from '@/lib/supabase/server';
 import { sendBudgetAlerts } from '@/lib/budget-alerts';
+import { createTransactionSchema, transactionQuerySchema } from '@/lib/schemas';
 
 export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const userId = searchParams.get('user_id');
-  const start = searchParams.get('start');
-  const end = searchParams.get('end');
-  const type = searchParams.get('type');
-
-  if (!userId) {
-    return NextResponse.json({ error: 'User ID required' }, { status: 400 });
+  const user = await getAuthenticatedUser();
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+
+  const { searchParams } = new URL(request.url);
+  const parsed = transactionQuerySchema.safeParse({
+    start: searchParams.get('start') || undefined,
+    end: searchParams.get('end') || undefined,
+    type: searchParams.get('type') || undefined,
+  });
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+  }
+  const { start, end, type } = parsed.data;
 
   const supabase = await createClient();
 
   let query = supabase
     .from('transactions')
     .select('*, categories(name, icon)')
-    .eq('user_id', userId)
+    .eq('user_id', user.id)
     .order('date', { ascending: false });
 
   if (start) query = query.gte('date', start);
@@ -35,26 +42,35 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const body = await request.json();
-  const { user_id, amount, type, category_id, description, date, is_recurring, recurring_interval } = body;
-
-  if (!user_id || !amount || !type) {
-    return NextResponse.json({ error: 'Required fields missing' }, { status: 400 });
+  const user = await getAuthenticatedUser();
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+
+  const json = await request.json().catch(() => null);
+  if (!json) {
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
+  }
+
+  const parsed = createTransactionSchema.safeParse(json);
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+  }
+  const { amount, type, category_id, description, date, is_recurring, recurring_interval } = parsed.data;
 
   const supabase = await createClient();
 
   const { data, error } = await supabase
     .from('transactions')
     .insert({
-      user_id,
+      user_id: user.id,
       amount,
       type,
-      category_id,
-      description,
+      category_id: category_id ?? null,
+      description: description ?? null,
       date: date || new Date().toISOString().split('T')[0],
-      is_recurring: is_recurring || false,
-      recurring_interval,
+      is_recurring: is_recurring ?? false,
+      recurring_interval: recurring_interval ?? null,
     })
     .select('*, categories(name, icon)')
     .single();
@@ -66,7 +82,7 @@ export async function POST(request: NextRequest) {
   // Check budget alerts after adding expense
   if (type === 'expense' && category_id) {
     try {
-      await sendBudgetAlerts(user_id, category_id);
+      await sendBudgetAlerts(user.id, category_id);
     } catch (err) {
       console.error('Error sending budget alerts:', err);
       // Don't fail the transaction creation if alerts fail
@@ -74,4 +90,64 @@ export async function POST(request: NextRequest) {
   }
 
   return NextResponse.json(data);
+}
+
+export async function PUT(request: NextRequest) {
+  const user = await getAuthenticatedUser();
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const json = await request.json().catch(() => null);
+  if (!json) {
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
+  }
+
+  // Allow id + any subset of transaction fields
+  const { id, ...updates } = json as { id?: string } & Record<string, unknown>;
+  if (!id) {
+    return NextResponse.json({ error: 'id is required' }, { status: 400 });
+  }
+
+  const supabase = await createClient();
+  // Update is scoped to the user's own row — RLS will enforce this too
+  const { data, error } = await supabase
+    .from('transactions')
+    .update(updates)
+    .eq('id', id)
+    .eq('user_id', user.id)
+    .select('*, categories(name, icon)')
+    .single();
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json(data);
+}
+
+export async function DELETE(request: NextRequest) {
+  const user = await getAuthenticatedUser();
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const { searchParams } = new URL(request.url);
+  const id = searchParams.get('id');
+  if (!id) {
+    return NextResponse.json({ error: 'id is required' }, { status: 400 });
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from('transactions')
+    .delete()
+    .eq('id', id)
+    .eq('user_id', user.id);
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ success: true });
 }

@@ -1,28 +1,59 @@
-import { NextResponse } from 'next/server';
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import { supabaseAdmin } from '@/lib/supabase/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient, getAuthenticatedUser } from '@/lib/supabase/server';
+import { aiQuerySchema } from '@/lib/schemas';
+import { answerFinancialQuery } from '@/lib/ai';
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+export async function POST(request: NextRequest) {
+  const user = await getAuthenticatedUser();
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
-export async function POST(request: Request) {
-  const { query: userQuery, userId } = await request.json();
+  const json = await request.json().catch(() => null);
+  if (!json) {
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
+  }
 
-  // Fetch transactions, categories, budgets for context
-  const { data: transactions } = await supabaseAdmin.from('transactions').select('amount, type, date, categories(name)').eq('user_id', userId);
-  const { data: budgets } = await supabaseAdmin.from('budgets').select('amount, month, categories(name)').eq('user_id', userId);
+  const parsed = aiQuerySchema.safeParse(json);
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+  }
+  const userQuery = parsed.data.query;
+
+  const supabase = await createClient();
+
+  const [{ data: transactions }, { data: budgets }] = await Promise.all([
+    supabase
+      .from('transactions')
+      .select('amount, type, date, categories(name)')
+      .eq('user_id', user.id)
+      .order('date', { ascending: false })
+      .limit(500),
+    supabase
+      .from('budgets')
+      .select('amount, month, categories(name)')
+      .eq('user_id', user.id),
+  ]);
+
+  // Cast: Supabase's TS inference treats FK joins as arrays, but at runtime
+  // `categories` is a single object (or null) for these queries.
+  type TxRow = { amount: number; type: string; date: string; categories: { name: string } | null };
+  type BudgetRow = { amount: number; month: string; categories: { name: string } | null };
 
   const context = {
-    transactions: transactions?.map(t => ({
-      amount: t.amount, type: t.type, date: t.date, category: t.categories?.name || 'Uncategorized'
+    transactions: ((transactions || []) as unknown as TxRow[]).map((t) => ({
+      amount: t.amount,
+      type: t.type,
+      date: t.date,
+      category: t.categories?.name || 'Uncategorized',
     })),
-    budgets: budgets?.map(b => ({
-      category: b.categories?.name, amount: b.amount, month: b.month
-    }))
+    budgets: ((budgets || []) as unknown as BudgetRow[]).map((b) => ({
+      category: b.categories?.name,
+      amount: b.amount,
+      month: b.month,
+    })),
   };
 
-  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-  const prompt = `You are a personal finance assistant. Answer the user's question based on this data:\n${JSON.stringify(context)}\nUser question: ${userQuery}\nAnswer in a friendly tone, include rupee amounts where relevant.`;
-  const result = await model.generateContent(prompt);
-  const response = await result.response;
-  return NextResponse.json({ answer: response.text() });
+  const answer = await answerFinancialQuery(userQuery, context);
+  return NextResponse.json({ answer });
 }

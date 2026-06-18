@@ -252,7 +252,7 @@ export default function SettingsPage() {
 
           <div>
             <Label htmlFor="currency" className="mb-2 block">Currency</Label>
-            <Select value={settings.currency} onValueChange={(value) => handleSettingChange('currency', value)}>
+            <Select value={settings.currency} onValueChange={(value: string) => handleSettingChange('currency', value)}>
               <SelectTrigger id="currency">
                 <SelectValue />
               </SelectTrigger>
@@ -306,7 +306,7 @@ export default function SettingsPage() {
             <Switch
               id="notifications"
               checked={settings.notifications_enabled}
-              onCheckedChange={(checked) => handleSettingChange('notifications_enabled', checked)}
+              onCheckedChange={(checked: boolean) => handleSettingChange('notifications_enabled', checked)}
             />
           </div>
 
@@ -318,7 +318,7 @@ export default function SettingsPage() {
             <Switch
               id="budgetAlerts"
               checked={settings.budget_alerts_enabled}
-              onCheckedChange={(checked) => handleSettingChange('budget_alerts_enabled', checked)}
+              onCheckedChange={(checked: boolean) => handleSettingChange('budget_alerts_enabled', checked)}
             />
           </div>
 

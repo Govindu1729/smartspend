@@ -1,15 +1,15 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase/server';
+import { createClient, getAuthenticatedUser } from '@/lib/supabase/server';
 
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const userId = searchParams.get('user_id');
-
-  if (!userId) {
-    return NextResponse.json({ error: 'User ID required' }, { status: 400 });
+export async function GET() {
+  const user = await getAuthenticatedUser();
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { data: transactions, error } = await supabaseAdmin
+  const supabase = await createClient();
+
+  const { data: transactions, error } = await supabase
     .from('transactions')
     .select(`
       amount,
@@ -20,7 +20,7 @@ export async function GET(request: Request) {
       recurring_interval,
       categories(name)
     `)
-    .eq('user_id', userId)
+    .eq('user_id', user.id)
     .order('date', { ascending: false })
     .csv();
 

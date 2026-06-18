@@ -154,7 +154,7 @@ export function TransactionForm({ userId, initialData, onSubmit }: TransactionFo
         <Label htmlFor="category" className="font-semibold">Category</Label>
         <Select
           defaultValue={initialData?.category_id || ''}
-          onValueChange={(value) => setValue('category_id', value)}
+          onValueChange={(value: string) => setValue('category_id', value)}
         >
           <SelectTrigger>
             <SelectValue placeholder="Select category" />
@@ -181,7 +181,7 @@ export function TransactionForm({ userId, initialData, onSubmit }: TransactionFo
           <Switch
             id="is_recurring"
             checked={isRecurring}
-            onCheckedChange={(checked) => setValue('is_recurring', checked)}
+            onCheckedChange={(checked: boolean) => setValue('is_recurring', checked)}
           />
           <Label htmlFor="is_recurring" className="font-semibold">Recurring Transaction?</Label>
         </div>
