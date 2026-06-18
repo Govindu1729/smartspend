@@ -1,92 +1,121 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import * as XLSX from 'xlsx';
 
-// Parse different bank formats
 function parseAmount(amountStr: string): number {
-  // Remove commas, quotes, spaces
-  return parseFloat(amountStr.replace(/[,₹"' ]/g, ''));
+  if (!amountStr) return 0;
+  return parseFloat(String(amountStr).replace(/[,₹"' ]/g, '')) || 0;
 }
 
-function detectFormat(headers: string[]): 'phonepe' | 'generic' {
-  const headerStr = headers.join(' ').toLowerCase();
-  if (headerStr.includes('phonepe') || headerStr.includes('utr')) return 'phonepe';
-  return 'generic';
+function parseDate(dateStr: string): string {
+  if (!dateStr) return new Date().toISOString().split('T')[0];
+  
+  try {
+    // Try parsing as Excel date number
+    const num = parseFloat(dateStr);
+    if (!isNaN(num) && num > 40000 && num < 60000) {
+      // Excel date serial number
+      const date = new Date((num - 25569) * 86400 * 1000);
+      return date.toISOString().split('T')[0];
+    }
+    
+    // Try standard date parsing
+    const parsed = new Date(dateStr);
+    if (!isNaN(parsed.getTime())) {
+      return parsed.toISOString().split('T')[0];
+    }
+  } catch {}
+  
+  return dateStr;
 }
 
-function parsePhonePe(lines: string[][]): ParsedTransaction[] {
+function parsePhonePe(rows: any[][]): ParsedTransaction[] {
   const transactions: ParsedTransaction[] = [];
   
-  for (const row of lines) {
-    if (row.length < 7) continue;
+  for (const row of rows) {
+    if (!row || row.length < 4) continue;
     
-    const dateStr = row[0]?.trim();
-    const description = row[2]?.trim();
-    const type = row[4]?.trim();
-    const amountStr = row[6]?.trim();
+    // Find columns by header names
+    const dateStr = String(row[0] || '').trim();
+    const description = String(row[2] || row[1] || '').trim();
+    const typeStr = String(row[4] || row[3] || '').trim().toUpperCase();
+    const amountStr = String(row[6] || row[5] || row[row.length - 1] || '').trim();
     
-    if (!dateStr || !description || !amountStr) continue;
-    if (dateStr.toLowerCase().includes('date')) continue; // skip header
+    if (!dateStr || !amountStr) continue;
+    if (dateStr.toLowerCase().includes('date')) continue;
     
     const amount = parseAmount(amountStr);
-    const isCredit = type?.toUpperCase() === 'CREDIT' || description.toLowerCase().includes('received');
+    if (amount === 0) continue;
     
-    // Parse date: "Jun 07, 2026"
-    let date = dateStr;
-    try {
-      const parsed = new Date(dateStr);
-      if (!isNaN(parsed.getTime())) {
-        date = parsed.toISOString().split('T')[0];
-      }
-    } catch {}
+    const isCredit = typeStr === 'CREDIT' || 
+                     typeStr === 'C' || 
+                     description.toLowerCase().includes('received') ||
+                     description.toLowerCase().includes('credited');
     
     transactions.push({
       amount,
       type: isCredit ? 'income' : 'expense',
-      description: description.replace(/Paid to |Received from /gi, '').trim(),
-      date,
+      description: description
+        .replace(/Paid to |Paid by |Received from |Credited to /gi, '')
+        .replace(/\s+/g, ' ')
+        .trim() || 'Imported transaction',
+      date: parseDate(dateStr),
     });
   }
   
   return transactions;
 }
 
-function parseGeneric(lines: string[][]): ParsedTransaction[] {
-  // Try to find columns by header names
+function parseGeneric(rows: any[][]): ParsedTransaction[] {
   const transactions: ParsedTransaction[] = [];
   
-  for (const row of lines) {
-    if (row.length < 3) continue;
+  if (rows.length === 0) return transactions;
+  
+  // Find header row
+  const headers = rows[0].map((h: any) => String(h || '').toLowerCase().trim());
+  
+  // Find column indices
+  const findCol = (keywords: string[]): number => {
+    return headers.findIndex((h: string) => 
+      keywords.some(k => h.includes(k))
+    );
+  };
+  
+  const dateCol = findCol(['date', 'time', 'dated']);
+  const descCol = findCol(['description', 'detail', 'particular', 'transaction details', 'name', 'narration']);
+  const amountCol = findCol(['amount', 'value', 'sum']);
+  const typeCol = findCol(['type', 'dr/cr', 'debit/credit', 'transaction type']);
+  
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i];
+    if (!row || row.length < 2) continue;
     
-    // Try to find date, description, amount columns
-    let dateIdx = -1, descIdx = -1, amountIdx = -1, typeIdx = -1;
+    const dateIdx = dateCol >= 0 ? dateCol : 0;
+    const descIdx = descCol >= 0 ? descCol : 1;
+    const amountIdx = amountCol >= 0 ? amountCol : (row.length - 1);
+    const typeIdx = typeCol >= 0 ? typeCol : -1;
     
-    row.forEach((cell, i) => {
-      const c = cell.toLowerCase();
-      if (c.includes('date') || /\d{1,2}[-/]\d{1,2}[-/]\d{2,4}/.test(cell)) dateIdx = i;
-      if (c.includes('description') || c.includes('detail') || c.includes('particular')) descIdx = i;
-      if (c.includes('amount') || c.includes('debit') || c.includes('credit')) amountIdx = i;
-      if (c.includes('type') || c.includes('dr/cr')) typeIdx = i;
-    });
-    
-    if (dateIdx === -1) dateIdx = 0;
-    if (descIdx === -1) descIdx = 1;
-    if (amountIdx === -1) amountIdx = row.length - 1;
-    
-    const dateStr = row[dateIdx]?.trim();
-    const description = row[descIdx]?.trim();
-    const amountStr = row[amountIdx]?.trim();
-    const typeStr = typeIdx !== -1 ? row[typeIdx]?.trim() : '';
+    const dateStr = String(row[dateIdx] || '').trim();
+    const description = String(row[descIdx] || '').trim();
+    const amountStr = String(row[amountIdx] || '').trim();
+    const typeStr = typeIdx >= 0 ? String(row[typeIdx] || '').trim().toUpperCase() : '';
     
     if (!dateStr || !amountStr) continue;
+    if (dateStr.toLowerCase().includes('date')) continue;
     
     const amount = parseAmount(amountStr);
-    const isCredit = typeStr.toUpperCase().includes('CREDIT') || typeStr.toUpperCase().includes('C');
+    if (amount === 0) continue;
+    
+    const isCredit = typeStr.includes('CREDIT') || 
+                     typeStr.includes('C') || 
+                     typeStr.includes('RECEIVED') ||
+                     description.toLowerCase().includes('received');
     
     transactions.push({
       amount,
       type: isCredit ? 'income' : 'expense',
       description: description || 'Imported transaction',
-      date: dateStr,
+      date: parseDate(dateStr),
     });
   }
   
@@ -98,16 +127,6 @@ interface ParsedTransaction {
   type: 'income' | 'expense';
   description: string;
   date: string;
-}
-
-function parseCSV(text: string): string[][] {
-  return text
-    .split('\n')
-    .filter(line => line.trim())
-    .map(line => 
-      line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/) // Handle quoted commas
-        .map(cell => cell.replace(/^["']|["']$/g, '').trim())
-    );
 }
 
 export async function POST(request: NextRequest) {
@@ -126,28 +145,58 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
     }
 
-    const text = await file.text();
-    const lines = parseCSV(text);
+    const buffer = await file.arrayBuffer();
+    const fileName = file.name.toLowerCase();
     
-    if (lines.length < 2) {
-      return NextResponse.json({ error: 'Empty or invalid file' }, { status: 400 });
+    let rows: any[][] = [];
+    
+    if (fileName.endsWith('.csv') || fileName.endsWith('.txt')) {
+      // Parse CSV
+      const text = new TextDecoder().decode(buffer);
+      rows = text
+        .split('\n')
+        .filter(line => line.trim())
+        .map(line => 
+          line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/)
+            .map(cell => cell.replace(/^["']|["']$/g, '').trim())
+        );
+    } else if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
+      // Parse Excel
+      const workbook = XLSX.read(buffer, { type: 'array' });
+      const sheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
+      rows = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as any[][];
+    } else {
+      return NextResponse.json({ error: 'Unsupported file format. Use CSV or XLSX.' }, { status: 400 });
     }
 
-    const format = detectFormat(lines[0]);
-    let transactions: ParsedTransaction[];
+    if (rows.length < 1) {
+      return NextResponse.json({ error: 'Empty file' }, { status: 400 });
+    }
+
+    // Detect format
+    const firstRow = rows[0].map((c: any) => String(c || '').toLowerCase()).join(' ');
+    const isPhonePe = firstRow.includes('phonepe') || 
+                      firstRow.includes('utr') || 
+                      firstRow.includes('transaction statement');
     
-    if (format === 'phonepe') {
-      transactions = parsePhonePe(lines);
+    let transactions: ParsedTransaction[];
+    if (isPhonePe) {
+      transactions = parsePhonePe(rows);
     } else {
-      transactions = parseGeneric(lines);
+      transactions = parseGeneric(rows);
     }
 
     if (transactions.length === 0) {
-      return NextResponse.json({ error: 'No transactions found in file' }, { status: 400 });
+      return NextResponse.json({ 
+        error: 'No transactions found. Check file format. First row should contain headers like Date, Description, Amount.' 
+      }, { status: 400 });
     }
 
     // Insert into database
     let imported = 0;
+    const errors: string[] = [];
+    
     for (const txn of transactions) {
       const { error } = await supabase.from('transactions').insert({
         user_id: user.id,
@@ -157,20 +206,25 @@ export async function POST(request: NextRequest) {
         date: txn.date,
       });
       
-      if (!error) imported++;
+      if (error) {
+        errors.push(`Failed: ${txn.description} - ${error.message}`);
+      } else {
+        imported++;
+      }
     }
 
     return NextResponse.json({
       success: true,
       imported,
       total: transactions.length,
+      errors: errors.slice(0, 5),
       message: `Imported ${imported} of ${transactions.length} transactions`,
     });
 
   } catch (error) {
     console.error('Import error:', error);
     return NextResponse.json(
-      { error: 'Failed to process file. Check the format.' },
+      { error: `Import failed: ${error instanceof Error ? error.message : 'Unknown error'}` },
       { status: 500 }
     );
   }

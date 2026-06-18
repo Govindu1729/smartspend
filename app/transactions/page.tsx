@@ -118,7 +118,7 @@ export default function TransactionsPage() {
             type="file"
             ref={fileInputRef}
             onChange={handleFileChange}
-            accept=".csv,.txt"
+            accept=".csv,.xlsx,.xls"
             className="hidden"
           />
           <Button variant="outline" onClick={handleImportClick} disabled={isImporting}>
