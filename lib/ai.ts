@@ -1,20 +1,20 @@
 const AI_MODEL = process.env.AI_MODEL || 'google/gemini-2.0-flash-001';
 
-let _apiKey: string | null = null;
 function getApiKey(): string {
-  if (_apiKey) return _apiKey;
   const apiKey = process.env.OPENROUTER_API_KEY || process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error('API key not set');
-  _apiKey = apiKey;
-  return _apiKey;
+  return apiKey;
 }
 
 async function callAI(prompt: string): Promise<string> {
+  const apiKey = getApiKey();
+  console.log('Using API key (first 10 chars):', apiKey.substring(0, 10) + '...');
+  
   const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${getApiKey()}`,
+      'Authorization': `Bearer ${apiKey}`,
       'HTTP-Referer': 'https://smartspend-sandy.vercel.app',
       'X-Title': 'SmartSpend',
     },
@@ -24,8 +24,14 @@ async function callAI(prompt: string): Promise<string> {
     }),
   });
 
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.error?.message || 'API error');
+  const text = await response.text();
+  console.log('OpenRouter response status:', response.status);
+  
+  if (!response.ok) {
+    throw new Error(`Status ${response.status}: ${text.substring(0, 100)}`);
+  }
+  
+  const data = JSON.parse(text);
   return data.choices?.[0]?.message?.content || 'No response';
 }
 
