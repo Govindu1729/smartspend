@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { Bell, Check, AlertCircle } from 'lucide-react';
+import { Bell, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -8,10 +8,12 @@ export function ServiceWorkerRegistration() {
   const [status, setStatus] = useState<'idle' | 'installing' | 'installed' | 'error'>('idle');
   const [isNotificationEnabled, setIsNotificationEnabled] = useState(false);
   const [userId, setUserId] = useState<string>('');
-  const [showBanner, setShowBanner] = useState(true);
+  const [showBanner, setShowBanner] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem('notificationBannerDismissed') !== 'true';
+  });
 
   useEffect(() => {
-    // Get user ID
     const getUser = async () => {
       try {
         const response = await fetch('/api/auth/user');
@@ -27,7 +29,6 @@ export function ServiceWorkerRegistration() {
 
     getUser();
 
-    // Register service worker
     if ('serviceWorker' in navigator) {
       registerServiceWorker();
     }
@@ -105,6 +106,11 @@ export function ServiceWorkerRegistration() {
     }
   };
 
+  const dismissBanner = () => {
+    setShowBanner(false);
+    localStorage.setItem('notificationBannerDismissed', 'true');
+  };
+
   const showToast = (title: string, message: string) => {
     const toastElement = document.createElement('div');
     toastElement.className =
@@ -149,7 +155,7 @@ export function ServiceWorkerRegistration() {
                 >
                   <Bell className="h-3 w-3 mr-1" /> Enable
                 </Button>
-                <Button variant="ghost" size="sm" onClick={() => setShowBanner(false)}>
+                <Button variant="ghost" size="sm" onClick={dismissBanner}>
                   Dismiss
                 </Button>
               </div>
@@ -168,7 +174,7 @@ export function ServiceWorkerRegistration() {
                   ✓ Notifications enabled - You'll get budget alerts!
                 </span>
               </div>
-              <Button variant="ghost" size="sm" onClick={() => setShowBanner(false)}>
+              <Button variant="ghost" size="sm" onClick={dismissBanner}>
                 ✕
               </Button>
             </div>
