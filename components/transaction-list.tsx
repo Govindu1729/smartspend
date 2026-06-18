@@ -44,7 +44,7 @@ export function TransactionList({ transactions: propTransactions, loading: propL
     return (
       <Card>
         <CardContent className="py-8 text-center text-muted-foreground">
-          No transactions yet. Start by adding one!
+          <div class="flex flex-col items-center gap-3 py-4"><div class="p-3 rounded-full bg-primary/10"><svg class="h-8 w-8 text-primary/50" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg></div><p class="text-muted-foreground">No transactions yet</p><a href="/transactions"><button class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2">Add Your First Transaction</button></a></div>
         </CardContent>
       </Card>
     );
