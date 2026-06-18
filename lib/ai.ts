@@ -1,4 +1,4 @@
-const AI_MODEL = process.env.AI_MODEL || 'google/gemma-2-9b-it:free';
+const AI_MODEL = process.env.AI_MODEL || 'google/gemma-4-26b-a4b-it:free';
 
 function getApiKey(): string {
   const apiKey = process.env.OPENROUTER_API_KEY;
