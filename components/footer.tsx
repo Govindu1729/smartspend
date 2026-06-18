@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { PiggyBank, Github, Mail, Heart } from 'lucide-react';
+import { PiggyBank, Mail, Heart, ExternalLink } from 'lucide-react';
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
@@ -87,7 +87,7 @@ export function Footer() {
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
-                <Github className="h-4 w-4" />
+                <ExternalLink className="h-4 w-4" />
                 GitHub
               </a>
             </div>
