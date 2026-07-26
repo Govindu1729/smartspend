@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { createClient, getSupabaseAdmin } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 
 export async function POST() {
@@ -15,39 +15,27 @@ export async function POST() {
       );
     }
 
-    // Delete user's data from transactions table
-    await supabase
-      .from('transactions')
-      .delete()
-      .eq('user_id', user.id);
+    // Delete user's relational data first
+    await supabase.from('transactions').delete().eq('user_id', user.id);
+    await supabase.from('budgets').delete().eq('user_id', user.id);
+    await supabase.from('push_subscriptions').delete().eq('user_id', user.id);
+    await supabase.from('notifications').delete().eq('user_id', user.id);
+    await supabase.from('categories').delete().eq('user_id', user.id);
+    await supabase.from('profiles').delete().eq('id', user.id);
 
-    // Delete user's data from budgets table
-    await supabase
-      .from('budgets')
-      .delete()
-      .eq('user_id', user.id);
+    // FIX: Delete the user account safely using the Admin Service Role Key
+    const admin = getSupabaseAdmin();
+    const { error: deleteError } = await admin.auth.admin.deleteUser(user.id);
 
-    // Delete user's data from categories table
-    await supabase
-      .from('categories')
-      .delete()
-      .eq('user_id', user.id);
-
-    // Delete the user account itself
-    // Note: This requires the admin API or you can use the user delete endpoint
-    const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/user`, {
-      method: 'DELETE',
-      headers: {
-        Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-        apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to delete account');
+    if (deleteError) {
+      console.error('Failed to delete auth user:', deleteError);
+      return NextResponse.json(
+        { error: 'Failed to delete account from authentication system.' },
+        { status: 500 }
+      );
     }
 
-    // Sign out the user
+    // Sign out the user locally
     await supabase.auth.signOut();
 
     return NextResponse.json(
