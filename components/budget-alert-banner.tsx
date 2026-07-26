@@ -2,7 +2,6 @@
 import { AlertTriangle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import Link from 'next/link';
 import { BudgetAlertData } from '@/hooks/use-budget-alerts';
 
 interface BudgetAlertBannerProps {
@@ -11,13 +10,16 @@ interface BudgetAlertBannerProps {
 }
 
 export function BudgetAlertBanner({ alerts, onDismiss }: BudgetAlertBannerProps) {
-  if (!alerts || alerts.length === 0) {
+  // FIX: Only show alerts that have reached at least 80% of the budget
+  const visibleAlerts = alerts.filter((alert) => alert.percentage >= 80);
+
+  if (!visibleAlerts || visibleAlerts.length === 0) {
     return null;
   }
 
   return (
     <div className="space-y-3 mb-6" role="alert" aria-live="assertive">
-      {alerts.map((alert) => {
+      {visibleAlerts.map((alert) => {
         const isExceeded = alert.percentage >= 100;
         const isCritical = alert.percentage >= 90;
 
@@ -26,10 +28,10 @@ export function BudgetAlertBanner({ alerts, onDismiss }: BudgetAlertBannerProps)
             key={alert.categoryId}
             className={
               isExceeded
-                ? 'border-red-500 bg-red-50 dark:bg-red-950'
+                ? 'border-red-500 bg-red-50 dark:bg-red-950 shadow-md'
                 : isCritical
-                ? 'border-orange-500 bg-orange-50 dark:bg-orange-950'
-                : 'border-yellow-500 bg-yellow-50 dark:bg-yellow-950'
+                ? 'border-orange-500 bg-orange-50 dark:bg-orange-950 shadow-md'
+                : 'border-yellow-500 bg-yellow-50 dark:bg-yellow-950 shadow-md'
             }
           >
             <CardContent className="pt-6">
@@ -67,7 +69,7 @@ export function BudgetAlertBanner({ alerts, onDismiss }: BudgetAlertBannerProps)
                           : 'text-yellow-700 dark:text-yellow-300'
                       }`}
                     >
-                      You've spent ₹{alert.currentSpend.toLocaleString('en-IN')} out of ₹
+                      You&apos;ve spent ₹{alert.currentSpend.toLocaleString('en-IN')} out of ₹
                       {alert.budgetAmount.toLocaleString('en-IN')} ({alert.percentage}%) on {alert.categoryName}.
                     </p>
                   </div>

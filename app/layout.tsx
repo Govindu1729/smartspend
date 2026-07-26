@@ -133,6 +133,7 @@ export default async function RootLayout({
                       <Link
                         key={item.href}
                         href={item.href}
+                        prefetch={false} // Prevents unnecessary data refetching if already on the page
                         className="flex items-center gap-2 text-sm px-3 py-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
                       >
                         <item.icon className="h-4 w-4" aria-hidden="true" />
