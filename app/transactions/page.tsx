@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Download, Upload, Filter, X, CheckCircle, AlertCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function TransactionsPage() {
   const [user, setUser] = useState<any>(null);
@@ -35,11 +36,20 @@ export default function TransactionsPage() {
     });
   }, []);
 
+  // FIX: Only initialize hook if user ID exists
   const { transactions, loading, addTransaction, updateTransaction, deleteTransaction, refresh } = useTransactions(
     user?.id || ''
   );
 
-  if (!user) return null;
+  if (!user) {
+    return (
+      <main className="container mx-auto p-4 md:p-8 max-w-6xl">
+        <Skeleton className="h-10 w-48 mb-6" />
+        <Skeleton className="h-10 w-full mb-6" />
+        <Skeleton className="h-64 w-full" />
+      </main>
+    );
+  }
 
   const filteredTransactions = transactions.filter((t) => {
     if (filters.type !== 'all' && t.type !== filters.type) return false;

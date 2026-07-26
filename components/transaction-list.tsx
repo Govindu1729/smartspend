@@ -33,7 +33,7 @@ export function TransactionList({ transactions: propTransactions, loading: propL
 
   if (loading) {
     return (
-      <Card>
+      <Card className="glass-card">
         <CardContent className="py-8 text-center text-muted-foreground">
           Loading transactions...
         </CardContent>
@@ -43,14 +43,14 @@ export function TransactionList({ transactions: propTransactions, loading: propL
 
   if (transactions.length === 0) {
     return (
-      <Card>
+      <Card className="glass-card">
         <CardContent className="py-12 flex flex-col items-center justify-center text-center">
           <div className="p-4 rounded-full bg-primary/10 mb-4">
             <PlusCircle className="h-8 w-8 text-primary/60" />
           </div>
           <p className="text-muted-foreground mb-6 font-medium">No transactions yet</p>
           <Link href="/transactions">
-            <Button>
+            <Button className="btn-gradient">
               <PlusCircle className="mr-2 h-4 w-4" />
               Add Your First Transaction
             </Button>
@@ -61,9 +61,9 @@ export function TransactionList({ transactions: propTransactions, loading: propL
   }
 
   return (
-    <Card>
+    <Card className="glass-card">
       <CardHeader>
-        <CardTitle>Recent Transactions</CardTitle>
+        <CardTitle>{showAll ? 'All Transactions' : 'Recent Transactions'}</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
@@ -75,7 +75,7 @@ export function TransactionList({ transactions: propTransactions, loading: propL
               <div className="flex items-center gap-3">
                 <div
                   className={`p-2 rounded-full ${
-                    transaction.type === 'income' ? 'bg-green-100 text-green-600 dark:bg-green-900/30' : 'bg-red-100 text-red-600 dark:bg-red-900/30'
+                    transaction.type === 'income' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30' : 'bg-rose-100 text-rose-600 dark:bg-rose-900/30'
                   }`}
                 >
                   {transaction.type === 'income' ? (
@@ -102,7 +102,7 @@ export function TransactionList({ transactions: propTransactions, loading: propL
               <div className="flex items-center gap-4">
                 <span
                   className={`font-semibold ${
-                    transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
+                    transaction.type === 'income' ? 'text-emerald-600' : 'text-rose-600'
                   }`}
                 >
                   {transaction.type === 'income' ? '+' : '-'}₹{transaction.amount.toLocaleString()}
@@ -133,7 +133,7 @@ export function TransactionList({ transactions: propTransactions, loading: propL
                       <Button
                         variant="ghost"
                         size="icon-sm"
-                        className="text-red-500 hover:text-red-600"
+                        className="text-rose-500 hover:text-rose-600"
                         onClick={() => setDeletingId(transaction.id)}
                       >
                         <Trash2 className="h-4 w-4" />
