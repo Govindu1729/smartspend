@@ -17,6 +17,7 @@ import {
   LogOut,
   Bell,
   Settings,
+  Wallet,
 } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
@@ -71,8 +72,8 @@ export const viewport: Viewport = {
   maximumScale: 5,
   viewportFit: 'cover',
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#0f172a' },
-    { media: '(prefers-color-scheme: dark)', color: '#0f172a' },
+    { media: '(prefers-color-scheme: light)', color: '#4f46e5' },
+    { media: '(prefers-color-scheme: dark)', color: '#4f46e5' },
   ],
 };
 
@@ -99,7 +100,7 @@ export default async function RootLayout({
   ];
 
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className="min-h-screen bg-background antialiased">
         {/* Skip-to-content link for accessibility */}
         <a
@@ -115,22 +116,24 @@ export default async function RootLayout({
         {/* Toaster */}
         <Toaster />
 
-        {/* Navigation Bar */}
-        <nav className="border-b" aria-label="Primary">
+        {/* Sticky Glassmorphism Navbar */}
+        <nav className="sticky top-0 z-40 w-full border-b border-border/40 bg-background/80 backdrop-blur-lg" aria-label="Primary">
           <div className="container mx-auto px-4">
             <div className="flex h-16 items-center justify-between">
-              <div className="flex items-center gap-6">
-                <Link href="/" className="text-xl font-bold flex items-center gap-2">
-                  <PiggyBank className="h-6 w-6" aria-hidden="true" />
-                  SmartSpend
+              <div className="flex items-center gap-8">
+                <Link href="/" className="flex items-center gap-2 font-bold text-lg">
+                  <div className="p-1.5 rounded-lg btn-gradient">
+                    <Wallet className="h-4 w-4 text-white" aria-hidden="true" />
+                  </div>
+                  <span className="gradient-text hidden sm:inline">SmartSpend</span>
                 </Link>
                 {user && (
-                  <div className="hidden md:flex items-center gap-4">
+                  <div className="hidden md:flex items-center gap-1">
                     {navItems.map((item) => (
                       <Link
                         key={item.href}
                         href={item.href}
-                        className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                        className="flex items-center gap-2 text-sm px-3 py-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
                       >
                         <item.icon className="h-4 w-4" aria-hidden="true" />
                         {item.label}
@@ -139,40 +142,24 @@ export default async function RootLayout({
                   </div>
                 )}
               </div>
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
                 {user ? (
                   <>
-                    <span className="hidden md:inline text-sm text-muted-foreground">
+                    <span className="hidden md:inline text-xs text-muted-foreground px-3 py-1 rounded-full bg-muted">
                       {user.email}
                     </span>
                     <Link href="/notifications" className="hidden md:inline-flex">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        title="Notifications"
-                        aria-label="Notifications"
-                      >
+                      <Button variant="ghost" size="icon" title="Notifications" aria-label="Notifications">
                         <Bell className="h-4 w-4" aria-hidden="true" />
                       </Button>
                     </Link>
                     <Link href="/settings" className="hidden md:inline-flex">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        title="Settings"
-                        aria-label="Settings"
-                      >
+                      <Button variant="ghost" size="icon" title="Settings" aria-label="Settings">
                         <Settings className="h-4 w-4" aria-hidden="true" />
                       </Button>
                     </Link>
                     <form action="/api/auth/signout" method="POST">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        type="submit"
-                        title="Logout"
-                        aria-label="Logout"
-                      >
+                      <Button variant="ghost" size="icon" type="submit" title="Logout" aria-label="Logout">
                         <LogOut className="h-4 w-4" aria-hidden="true" />
                       </Button>
                     </form>
@@ -188,7 +175,7 @@ export default async function RootLayout({
                       </Button>
                     </Link>
                     <Link href="/signup">
-                      <Button size="sm">Get Started</Button>
+                      <Button size="sm" className="btn-gradient">Get Started</Button>
                     </Link>
                   </div>
                 )}
@@ -198,7 +185,7 @@ export default async function RootLayout({
         </nav>
 
         {/* Main Content */}
-        <main id="main-content">{children}</main>
+        <main id="main-content" className="relative">{children}</main>
 
         {/* Footer */}
         <Footer />
