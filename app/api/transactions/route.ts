@@ -59,14 +59,15 @@ export async function POST(request: NextRequest) {
   const { amount, type, category_id, description, date, is_recurring, recurring_interval } = parsed.data;
 
   const supabase = await createClient();
-
+// Find this block inside POST:
   const { data, error } = await supabase
     .from('transactions')
     .insert({
       user_id: user.id,
       amount,
       type,
-      category_id: category_id ?? null,
+      // CHANGE THIS LINE:
+      category_id: category_id && category_id !== '' ? category_id : null,
       description: description ?? null,
       date: date || new Date().toISOString().split('T')[0],
       is_recurring: is_recurring ?? false,
@@ -74,6 +75,21 @@ export async function POST(request: NextRequest) {
     })
     .select('*, categories(name, icon)')
     .single();
+
+  // const { data, error } = await supabase
+  //   .from('transactions')
+  //   .insert({
+  //     user_id: user.id,
+  //     amount,
+  //     type,
+  //     category_id: category_id ?? null,
+  //     description: description ?? null,
+  //     date: date || new Date().toISOString().split('T')[0],
+  //     is_recurring: is_recurring ?? false,
+  //     recurring_interval: recurring_interval ?? null,
+  //   })
+  //   .select('*, categories(name, icon)')
+  //   .single();
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -109,6 +125,8 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: 'id is required' }, { status: 400 });
   }
 
+  if (updates.category_id === '') updates.category_id = null;
+  
   const supabase = await createClient();
   // Update is scoped to the user's own row — RLS will enforce this too
   const { data, error } = await supabase
