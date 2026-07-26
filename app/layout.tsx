@@ -8,12 +8,9 @@ import { MobileNav } from '@/components/mobile-nav';
 import { Footer } from '@/components/footer';
 import { Toaster } from '@/components/toaster';
 import { ServiceWorkerRegistration } from '@/components/service-worker-registration';
+import { ThemeProvider } from '@/components/theme-provider';
+import { NavLinks } from '@/components/nav-links';
 import {
-  LayoutDashboard,
-  ArrowRightLeft,
-  PiggyBank,
-  BarChart3,
-  Sparkles,
   LogOut,
   Bell,
   Settings,
@@ -91,105 +88,85 @@ export default async function RootLayout({
     // Not authenticated — show public content (landing page)
   }
 
-  const navItems = [
-    { href: '/', label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/transactions', label: 'Transactions', icon: ArrowRightLeft },
-    { href: '/budgets', label: 'Budgets', icon: PiggyBank },
-    { href: '/reports', label: 'Reports', icon: BarChart3 },
-    { href: '/ai-insights', label: 'AI Insights', icon: Sparkles },
-  ];
-
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="min-h-screen bg-background antialiased">
-        {/* Skip-to-content link for accessibility */}
-        <a
-          href="#main-content"
-          className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground"
-        >
-          Skip to content
-        </a>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          {/* Skip-to-content link for accessibility */}
+          <a
+            href="#main-content"
+            className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground"
+          >
+            Skip to content
+          </a>
 
-        {/* Service Worker Registration */}
-        <ServiceWorkerRegistration />
+          {/* Service Worker Registration */}
+          <ServiceWorkerRegistration />
 
-        {/* Toaster */}
-        <Toaster />
+          {/* Toaster */}
+          <Toaster />
 
-        {/* Sticky Glassmorphism Navbar */}
-        <nav className="sticky top-0 z-40 w-full border-b border-border/40 bg-background/80 backdrop-blur-lg" aria-label="Primary">
-          <div className="container mx-auto px-4">
-            <div className="flex h-16 items-center justify-between">
-              <div className="flex items-center gap-8">
-                <Link href="/" className="flex items-center gap-2 font-bold text-lg">
-                  <div className="p-1.5 rounded-lg btn-gradient">
-                    <Wallet className="h-4 w-4 text-white" aria-hidden="true" />
-                  </div>
-                  <span className="gradient-text hidden sm:inline">SmartSpend</span>
-                </Link>
-                {user && (
-                  <div className="hidden md:flex items-center gap-1">
-                    {navItems.map((item) => (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        prefetch={false} // Prevents unnecessary data refetching if already on the page
-                        className="flex items-center gap-2 text-sm px-3 py-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-                      >
-                        <item.icon className="h-4 w-4" aria-hidden="true" />
-                        {item.label}
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </div>
-              <div className="flex items-center gap-2">
-                {user ? (
-                  <>
-                    <span className="hidden md:inline text-xs text-muted-foreground px-3 py-1 rounded-full bg-muted">
-                      {user.email}
-                    </span>
-                    <Link href="/notifications" className="hidden md:inline-flex">
-                      <Button variant="ghost" size="icon" title="Notifications" aria-label="Notifications">
-                        <Bell className="h-4 w-4" aria-hidden="true" />
-                      </Button>
-                    </Link>
-                    <Link href="/settings" className="hidden md:inline-flex">
-                      <Button variant="ghost" size="icon" title="Settings" aria-label="Settings">
-                        <Settings className="h-4 w-4" aria-hidden="true" />
-                      </Button>
-                    </Link>
-                    <form action="/api/auth/signout" method="POST">
-                      <Button variant="ghost" size="icon" type="submit" title="Logout" aria-label="Logout">
-                        <LogOut className="h-4 w-4" aria-hidden="true" />
-                      </Button>
-                    </form>
-                    <div className="md:hidden">
-                      <MobileNav userEmail={user.email || ''} />
+          {/* Sticky Glassmorphism Navbar */}
+          <nav className="sticky top-0 z-40 w-full border-b border-border/40 bg-background/80 backdrop-blur-lg" aria-label="Primary">
+            <div className="container mx-auto px-4">
+              <div className="flex h-16 items-center justify-between">
+                <div className="flex items-center gap-8">
+                  <Link href="/" className="flex items-center gap-2 font-bold text-lg">
+                    <div className="p-1.5 rounded-lg btn-gradient">
+                      <Wallet className="h-4 w-4 text-white" aria-hidden="true" />
                     </div>
-                  </>
-                ) : (
-                  <div className="flex gap-2">
-                    <Link href="/login">
-                      <Button variant="ghost" size="sm">
-                        Sign In
-                      </Button>
-                    </Link>
-                    <Link href="/signup">
-                      <Button size="sm" className="btn-gradient">Get Started</Button>
-                    </Link>
-                  </div>
-                )}
+                    <span className="gradient-text hidden sm:inline">SmartSpend</span>
+                  </Link>
+                  {user && <NavLinks />}
+                </div>
+                <div className="flex items-center gap-2">
+                  {user ? (
+                    <>
+                      <span className="hidden md:inline text-xs text-muted-foreground px-3 py-1 rounded-full bg-muted">
+                        {user.email}
+                      </span>
+                      <Link href="/notifications" className="hidden md:inline-flex">
+                        <Button variant="ghost" size="icon" title="Notifications" aria-label="Notifications">
+                          <Bell className="h-4 w-4" aria-hidden="true" />
+                        </Button>
+                      </Link>
+                      <Link href="/settings" className="hidden md:inline-flex">
+                        <Button variant="ghost" size="icon" title="Settings" aria-label="Settings">
+                          <Settings className="h-4 w-4" aria-hidden="true" />
+                        </Button>
+                      </Link>
+                      <form action="/api/auth/signout" method="POST">
+                        <Button variant="ghost" size="icon" type="submit" title="Logout" aria-label="Logout">
+                          <LogOut className="h-4 w-4" aria-hidden="true" />
+                        </Button>
+                      </form>
+                      <div className="md:hidden">
+                        <MobileNav userEmail={user.email || ''} />
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex gap-2">
+                      <Link href="/login">
+                        <Button variant="ghost" size="sm">
+                          Sign In
+                        </Button>
+                      </Link>
+                      <Link href="/signup">
+                        <Button size="sm" className="btn-gradient">Get Started</Button>
+                      </Link>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        </nav>
+          </nav>
 
-        {/* Main Content */}
-        <main id="main-content" className="relative">{children}</main>
+          {/* Main Content */}
+          <main id="main-content" className="relative">{children}</main>
 
-        {/* Footer */}
-        <Footer />
+          {/* Footer */}
+          <Footer />
+        </ThemeProvider>
       </body>
     </html>
   );

@@ -1,4 +1,5 @@
 'use client';
+import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
@@ -35,6 +36,8 @@ interface UserSettings {
 export default function SettingsPage() {
   const supabase = createClient();
   const router = useRouter();
+  const { theme, setTheme } = useTheme();
+  
   const [user, setUser] = useState<any>(null);
   const [settings, setSettings] = useState<UserSettings>({
     email: '',
@@ -65,19 +68,22 @@ export default function SettingsPage() {
         router.push('/login');
       } else {
         setUser(user);
-        // In a real app, you'd fetch settings from user metadata or a settings table
         setSettings(prev => ({
           ...prev,
           email: user.email || '',
           display_name: user.user_metadata?.display_name || '',
+          theme: (theme as any) || 'system',
         }));
       }
     };
     loadUser();
-  }, []);
+  }, [theme]);
 
   const handleSettingChange = (key: keyof UserSettings, value: any) => {
     setSettings(prev => ({ ...prev, [key]: value }));
+    if (key === 'theme') {
+      setTheme(value); // Apply theme instantly via next-themes
+    }
     setSaveMessage('');
   };
 
@@ -87,7 +93,6 @@ export default function SettingsPage() {
     setSaveMessage('');
 
     try {
-      // Update user metadata
       const { error } = await supabase.auth.updateUser({
         data: {
           display_name: settings.display_name,
@@ -181,7 +186,6 @@ export default function SettingsPage() {
       });
       if (!response.ok) throw new Error('Account deletion failed');
       
-      // Sign out and redirect to login
       await supabase.auth.signOut();
       router.push('/login');
     } catch (err: any) {
@@ -196,13 +200,11 @@ export default function SettingsPage() {
 
   return (
     <main className="container mx-auto p-4 max-w-2xl pb-12">
-      {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Settings</h1>
         <p className="text-muted-foreground">Manage your account preferences and security</p>
       </div>
 
-      {/* Messages */}
       {saveMessage && (
         <Alert className="mb-6 border-green-500 bg-green-50 dark:bg-green-950">
           <CheckCircle className="h-4 w-4 text-green-600" />
@@ -217,7 +219,6 @@ export default function SettingsPage() {
         </Alert>
       )}
 
-      {/* Profile Settings */}
       <Card className="mb-6">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -270,7 +271,10 @@ export default function SettingsPage() {
 
           <div>
             <Label htmlFor="theme" className="mb-2 block">Theme</Label>
-            <Select value={settings.theme} onValueChange={(value: any) => handleSettingChange('theme', value)}>
+            <Select 
+              value={settings.theme} 
+              onValueChange={(value: any) => handleSettingChange('theme', value)}
+            >
               <SelectTrigger id="theme">
                 <SelectValue />
               </SelectTrigger>
@@ -289,7 +293,6 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      {/* Notification Preferences */}
       <Card className="mb-6">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -329,7 +332,6 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      {/* Security Settings */}
       <Card className="mb-6">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -399,7 +401,6 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      {/* Data Management */}
       <Card className="mb-6">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -421,7 +422,6 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      {/* Danger Zone */}
       <Card className="border-red-200 dark:border-red-900">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-red-600">
