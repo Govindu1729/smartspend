@@ -1,55 +1,43 @@
 {
-  "name": "SmartSpend — AI-Powered Personal Finance Tracker",
+  "name": "SmartSpend - AI Finance Tracker",
   "short_name": "SmartSpend",
   "description": "Track income & expenses, set budgets, get AI-powered insights, and receive push alerts before you overspend.",
-  "start_url": "/?source=pwa",
-  "scope": "/",
+  "start_url": "/",
   "display": "standalone",
-  "orientation": "portrait",
   "background_color": "#0f172a",
   "theme_color": "#0f172a",
-  "categories": ["finance", "productivity", "lifestyle"],
-  "lang": "en",
-  "dir": "ltr",
+  "orientation": "portrait-primary",
   "icons": [
     {
       "src": "/icons/icon-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "any maskable"
     },
     {
       "src": "/icons/icon-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "any maskable"
     },
     {
-      "src": "/icons/maskable-512x512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
+      "src": "/icons/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
     }
   ],
   "shortcuts": [
     {
       "name": "Add Transaction",
       "short_name": "Add",
-      "description": "Log a new income or expense",
-      "url": "/transactions?action=new",
+      "description": "Quickly add a new transaction",
+      "url": "/transactions",
       "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
     },
     {
-      "name": "View Budgets",
-      "short_name": "Budgets",
-      "description": "Check your monthly budget progress",
-      "url": "/budgets",
-      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
-    },
-    {
-      "name": "Ask AI",
+      "name": "AI Insights",
       "short_name": "AI",
-      "description": "Ask a question about your spending",
+      "description": "View AI spending insights",
       "url": "/ai-insights",
       "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
     }
