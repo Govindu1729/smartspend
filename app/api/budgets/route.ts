@@ -69,11 +69,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  // Inside app/api/budgets/route.ts -> POST function
+
   const json = await request.json().catch(() => null);
   if (!json) {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
+  // FIX: Convert string numbers to actual numbers
+  if (json.amount) json.amount = Number(json.amount);
+  if (json.alert_threshold) json.alert_threshold = Number(json.alert_threshold);
   const parsed = createBudgetSchema.safeParse(json);
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });

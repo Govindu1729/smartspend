@@ -42,7 +42,12 @@ export async function POST(request: NextRequest) {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from('categories')
-    .insert({ user_id: user.id, name, icon: icon || 'tag', is_default: false })
+    .insert({ 
+      user_id: user.id, 
+      name, 
+      icon: icon || 'tag', 
+      is_default: false // FIX: Added missing field
+    })
     .select()
     .single();
 
@@ -70,7 +75,6 @@ export async function PUT(request: NextRequest) {
   }
   const { id, ...updates } = parsed.data;
 
-  // Build only the fields that were provided
   const patch: Record<string, unknown> = {};
   if (updates.name !== undefined) patch.name = updates.name;
   if (updates.icon !== undefined) patch.icon = updates.icon;

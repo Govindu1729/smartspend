@@ -52,22 +52,33 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
+  // FIX: Convert string numbers from HTML inputs to actual numbers before Zod parsing
+  if (json.amount) json.amount = Number(json.amount);
+  if (json.alert_threshold) json.alert_threshold = Number(json.alert_threshold);
+
   const parsed = createTransactionSchema.safeParse(json);
   if (!parsed.success) {
+    console.error('Validation Error:', parsed.error.flatten());
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
-  const { amount, type, category_id, description, date, is_recurring, recurring_interval } = parsed.data;
+  
+  const { amount, type, description, date, is_recurring, recurring_interval } = parsed.data;
+  let { category_id } = parsed.data;
+
+  // FIX: Force empty strings to null so Postgres doesn't crash on UUID casting
+  if (!category_id || category_id === '') {
+    category_id = null;
+  }
 
   const supabase = await createClient();
-// Find this block inside POST:
+
   const { data, error } = await supabase
     .from('transactions')
     .insert({
       user_id: user.id,
       amount,
       type,
-      // CHANGE THIS LINE:
-      category_id: category_id && category_id !== '' ? category_id : null,
+      category_id: category_id,
       description: description ?? null,
       date: date || new Date().toISOString().split('T')[0],
       is_recurring: is_recurring ?? false,
@@ -76,22 +87,8 @@ export async function POST(request: NextRequest) {
     .select('*, categories(name, icon)')
     .single();
 
-  // const { data, error } = await supabase
-  //   .from('transactions')
-  //   .insert({
-  //     user_id: user.id,
-  //     amount,
-  //     type,
-  //     category_id: category_id ?? null,
-  //     description: description ?? null,
-  //     date: date || new Date().toISOString().split('T')[0],
-  //     is_recurring: is_recurring ?? false,
-  //     recurring_interval: recurring_interval ?? null,
-  //   })
-  //   .select('*, categories(name, icon)')
-  //   .single();
-
   if (error) {
+    console.error('Supabase Insert Error:', error.message);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
@@ -101,7 +98,6 @@ export async function POST(request: NextRequest) {
       await sendBudgetAlerts(user.id, category_id);
     } catch (err) {
       console.error('Error sending budget alerts:', err);
-      // Don't fail the transaction creation if alerts fail
     }
   }
 
