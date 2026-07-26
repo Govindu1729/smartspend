@@ -51,11 +51,11 @@ export default function TransactionsPage() {
   });
 
   const handleExportCSV = () => {
-    window.open(`/api/export?user_id=${user.id}`, '_blank');
+    window.open(`/api/export`, '_blank');
   };
 
   const handleExportPDF = () => {
-    window.open(`/api/export/pdf?user_id=${user.id}&format=pdf`, '_blank');
+    window.open(`/api/export/pdf`, '_blank');
   };
 
   const handleImportClick = () => {
@@ -110,10 +110,10 @@ export default function TransactionsPage() {
   const hasActiveFilters = filters.type !== 'all' || filters.category || filters.search || filters.dateFrom || filters.dateTo;
 
   return (
-    <main className="container mx-auto p-4 max-w-4xl">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Transactions</h1>
-        <div className="flex gap-2">
+    <main className="container mx-auto p-4 md:p-8 max-w-6xl">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+        <h1 className="text-3xl font-bold tracking-tight">Transactions</h1>
+        <div className="flex flex-wrap gap-2">
           <input
             type="file"
             ref={fileInputRef}
@@ -123,17 +123,17 @@ export default function TransactionsPage() {
           />
           <Button variant="outline" onClick={handleImportClick} disabled={isImporting}>
             <Upload className="mr-2 h-4 w-4" />
-            {isImporting ? 'Importing...' : 'Import CSV'}
+            {isImporting ? 'Importing...' : 'Import'}
           </Button>
           <Button variant="outline" onClick={handleExportCSV}>
-            <Download className="mr-2 h-4 w-4" /> Export CSV
+            <Download className="mr-2 h-4 w-4" /> CSV
           </Button>
           <Button variant="outline" onClick={handleExportPDF}>
-            <Download className="mr-2 h-4 w-4" /> Export PDF
+            <Download className="mr-2 h-4 w-4" /> PDF
           </Button>
           <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
             <DialogTrigger asChild>
-              <Button>
+              <Button className="btn-gradient">
                 <Plus className="mr-2 h-4 w-4" /> Add Transaction
               </Button>
             </DialogTrigger>
@@ -153,10 +153,9 @@ export default function TransactionsPage() {
         </div>
       </div>
 
-      {/* Import Status */}
       {importStatus && (
         <div className={`mb-4 p-4 rounded-lg flex items-center gap-2 ${
-          importStatus.type === 'success' ? 'bg-green-50 dark:bg-green-950 text-green-800 dark:text-green-200' : 'bg-red-50 dark:bg-red-950 text-red-800 dark:text-red-200'
+          importStatus.type === 'success' ? 'bg-emerald-50 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-200' : 'bg-rose-50 dark:bg-rose-950 text-rose-800 dark:text-rose-200'
         }`}>
           {importStatus.type === 'success' ? <CheckCircle className="h-5 w-5" /> : <AlertCircle className="h-5 w-5" />}
           <span className="text-sm">{importStatus.message}</span>
@@ -166,8 +165,7 @@ export default function TransactionsPage() {
         </div>
       )}
 
-      {/* Filters */}
-      <div className="bg-card rounded-lg p-4 mb-6 space-y-4">
+      <div className="glass-card rounded-xl p-4 mb-6 space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="font-medium flex items-center gap-2">
             <Filter className="h-4 w-4" /> Filters
@@ -208,7 +206,7 @@ export default function TransactionsPage() {
           />
         </div>
         {hasActiveFilters && (
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {filters.type !== 'all' && <Badge variant="secondary">{filters.type}</Badge>}
             {filters.search && <Badge variant="secondary">Search: {filters.search}</Badge>}
             {filters.dateFrom && <Badge variant="secondary">From: {filters.dateFrom}</Badge>}

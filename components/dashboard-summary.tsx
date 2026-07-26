@@ -100,10 +100,11 @@ export function DashboardSummary({ userId }: { userId: string }) {
             {stats.monthlyTrend?.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={stats.monthlyTrend} margin={{ top: 5, right: 10, bottom: 20, left: 10 }}>
+                  {/* FIX: Used CSS variables for dark mode compatibility */}
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
                   <XAxis dataKey="month" angle={-45} textAnchor="end" height={60} style={{ fontSize: '11px' }} interval={0} stroke="hsl(var(--muted-foreground))" />
                   <YAxis style={{ fontSize: '11px' }} tickFormatter={v => `₹${(v/1000).toFixed(0)}k`} stroke="hsl(var(--muted-foreground))" />
-                  <Tooltip cursor={{ fill: 'hsl(var(--muted))' }} contentStyle={{ background: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))', borderRadius: '0.5rem' }} formatter={(value: number) => [`₹${value.toLocaleString('en-IN')}`, '']} />
+                  <Tooltip cursor={{ fill: 'hsl(var(--muted))' }} contentStyle={{ background: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))', borderRadius: '0.5rem', color: 'hsl(var(--popover-foreground))' }} formatter={(value: number) => [`₹${value.toLocaleString('en-IN')}`, '']} />
                   <Bar dataKey="income" fill="#6366f1" name="Income" radius={[4, 4, 0, 0]} />
                   <Bar dataKey="expense" fill="#f43f5e" name="Expense" radius={[4, 4, 0, 0]} />
                 </BarChart>
