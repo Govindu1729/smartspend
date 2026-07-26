@@ -3,7 +3,6 @@ import { redirect } from 'next/navigation';
 import { DashboardSummary } from '@/components/dashboard-summary';
 import { TransactionList } from '@/components/transaction-list';
 import { LandingPage } from '@/components/landing-page';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -19,32 +18,41 @@ export default async function Page() {
 
   // Fetch current month budgets with category names
   const currentMonth = new Date().toISOString().slice(0, 7);
+  const monthStart = currentMonth + '-01';
+  const monthEnd = currentMonth + '-31';
+  
   const { data: budgets } = await supabase
     .from('budgets')
     .select('*, categories(name, icon)')
     .eq('user_id', user.id)
-    .gte('month', currentMonth + '-01')
-    .lte('month', currentMonth + '-31');
+    .gte('month', monthStart)
+    .lte('month', monthEnd);
 
-  // Fetch spending for each budget category this month
-  const budgetData = await Promise.all(
-    (budgets || []).map(async (budget) => {
-      const { data: transactions } = await supabase
-        .from('transactions')
-        .select('amount')
-        .eq('user_id', user.id)
-        .eq('category_id', budget.category_id)
-        .eq('type', 'expense')
-        .gte('date', currentMonth + '-01')
-        .lte('date', currentMonth + '-31');
-      
-      const spent = (transactions || []).reduce((sum, t) => sum + (t.amount || 0), 0);
-      return { ...budget, spent };
-    })
-  );
+  const categoryIds = (budgets || []).map((b) => b.category_id);
+
+  // FIX: Batch fetch all transactions for the month to prevent N+1 queries
+  let spendByCategory: Record<string, number> = {};
+  if (categoryIds.length > 0) {
+    const { data: txData } = await supabase
+      .from('transactions')
+      .select('category_id, amount')
+      .eq('user_id', user.id)
+      .in('category_id', categoryIds)
+      .eq('type', 'expense')
+      .gte('date', monthStart)
+      .lte('date', monthEnd);
+
+    (txData || []).forEach((t) => {
+      spendByCategory[t.category_id] = (spendByCategory[t.category_id] || 0) + t.amount;
+    });
+  }
+
+  const budgetData = (budgets || []).map((budget) => ({
+    ...budget,
+    spent: spendByCategory[budget.category_id] || 0,
+  }));
 
   const budgetCount = budgetData.length;
-  const hasData = budgetCount > 0;
 
   return (
     <main className="container mx-auto p-4 max-w-6xl">
