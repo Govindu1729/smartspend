@@ -7,7 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { TransactionForm } from './transaction-form';
 import { format } from 'date-fns';
-import { Pencil, Trash2, ArrowUpRight, ArrowDownRight, Repeat } from 'lucide-react';
+import { Pencil, Trash2, ArrowUpRight, ArrowDownRight, Repeat, PlusCircle } from 'lucide-react';
+import Link from 'next/link';
 
 interface TransactionListProps {
   transactions?: any[];
@@ -43,8 +44,17 @@ export function TransactionList({ transactions: propTransactions, loading: propL
   if (transactions.length === 0) {
     return (
       <Card>
-        <CardContent className="py-8 text-center text-muted-foreground">
-          <div class="flex flex-col items-center gap-3 py-4"><div class="p-3 rounded-full bg-primary/10"><svg class="h-8 w-8 text-primary/50" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg></div><p class="text-muted-foreground">No transactions yet</p><a href="/transactions"><button class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2">Add Your First Transaction</button></a></div>
+        <CardContent className="py-12 flex flex-col items-center justify-center text-center">
+          <div className="p-4 rounded-full bg-primary/10 mb-4">
+            <PlusCircle className="h-8 w-8 text-primary/60" />
+          </div>
+          <p className="text-muted-foreground mb-6 font-medium">No transactions yet</p>
+          <Link href="/transactions">
+            <Button>
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Add Your First Transaction
+            </Button>
+          </Link>
         </CardContent>
       </Card>
     );
@@ -65,7 +75,7 @@ export function TransactionList({ transactions: propTransactions, loading: propL
               <div className="flex items-center gap-3">
                 <div
                   className={`p-2 rounded-full ${
-                    transaction.type === 'income' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
+                    transaction.type === 'income' ? 'bg-green-100 text-green-600 dark:bg-green-900/30' : 'bg-red-100 text-red-600 dark:bg-red-900/30'
                   }`}
                 >
                   {transaction.type === 'income' ? (
@@ -76,7 +86,7 @@ export function TransactionList({ transactions: propTransactions, loading: propL
                 </div>
                 <div>
                   <p className="font-medium">{transaction.description || 'Untitled'}</p>
-                  <div className="flex gap-2 items-center">
+                  <div className="flex gap-2 items-center mt-1">
                     <Badge variant="outline" className="text-xs">
                       {transaction.categories?.name || 'Uncategorized'}
                     </Badge>
@@ -100,7 +110,7 @@ export function TransactionList({ transactions: propTransactions, loading: propL
                 <div className="flex gap-2">
                   <Dialog open={editingId === transaction.id} onOpenChange={() => setEditingId(null)}>
                     <DialogTrigger asChild>
-                      <Button variant="ghost" size="icon" onClick={() => setEditingId(transaction.id)}>
+                      <Button variant="ghost" size="icon-sm" onClick={() => setEditingId(transaction.id)}>
                         <Pencil className="h-4 w-4" />
                       </Button>
                     </DialogTrigger>
@@ -122,7 +132,7 @@ export function TransactionList({ transactions: propTransactions, loading: propL
                     <DialogTrigger asChild>
                       <Button
                         variant="ghost"
-                        size="icon"
+                        size="icon-sm"
                         className="text-red-500 hover:text-red-600"
                         onClick={() => setDeletingId(transaction.id)}
                       >
@@ -133,8 +143,8 @@ export function TransactionList({ transactions: propTransactions, loading: propL
                       <DialogHeader>
                         <DialogTitle>Delete Transaction</DialogTitle>
                       </DialogHeader>
-                      <p>Are you sure you want to delete this transaction?</p>
-                      <div className="flex justify-end gap-2">
+                      <p className="text-sm text-muted-foreground">Are you sure you want to delete this transaction? This action cannot be undone.</p>
+                      <div className="flex justify-end gap-2 mt-4">
                         <Button variant="outline" onClick={() => setDeletingId(null)}>
                           Cancel
                         </Button>
