@@ -195,8 +195,9 @@ export default function ReportsPage() {
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={reportData.monthlyBreakdown} margin={{ top: 5, right: 20, bottom: 30, left: 20 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} opacity={isDark ? 0.2 : 0.8} />
-                      <XAxis dataKey="month" angle={-45} textAnchor="end" height={60} style={{ fontSize: '11px' }} interval={0} stroke="hsl(var(--muted-foreground))" />
-                      <YAxis style={{ fontSize: '11px' }} tickFormatter={(v) => `₹${(v/1000).toFixed(0)}k`} stroke="hsl(var(--muted-foreground))" />
+                      {/* FIX: Added tick prop to change text color */}
+                      <XAxis dataKey="month" angle={-45} textAnchor="end" height={60} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: '11px' }} interval={0} stroke="hsl(var(--muted-foreground))" />
+                      <YAxis tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: '11px' }} tickFormatter={(v) => `₹${(v/1000).toFixed(0)}k`} stroke="hsl(var(--muted-foreground))" />
                       <Tooltip content={<CustomTooltip />} cursor={{ fill: 'hsl(var(--muted))', opacity: 0.5 }} />
                       <Legend wrapperStyle={{ fontSize: '12px' }} />
                       <Bar dataKey="income" fill={incomeColor} name="Income" radius={[6, 6, 0, 0]} />
@@ -284,8 +285,9 @@ export default function ReportsPage() {
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={reportData.dailySpending} margin={{ top: 5, right: 20, bottom: 30, left: 20 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} opacity={isDark ? 0.2 : 0.8} />
-                    <XAxis dataKey="date" angle={-45} textAnchor="end" height={60} style={{ fontSize: '11px' }} interval={Math.max(0, Math.floor(reportData.dailySpending.length / 10))} stroke="hsl(var(--muted-foreground))" />
-                    <YAxis style={{ fontSize: '11px' }} tickFormatter={(v) => `₹${v}`} stroke="hsl(var(--muted-foreground))" />
+                    {/* FIX: Added tick prop to change text color */}
+                    <XAxis dataKey="date" angle={-45} textAnchor="end" height={60} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: '11px' }} interval={Math.max(0, Math.floor(reportData.dailySpending.length / 10))} stroke="hsl(var(--muted-foreground))" />
+                    <YAxis tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: '11px' }} tickFormatter={(v) => `₹${v}`} stroke="hsl(var(--muted-foreground))" />
                     <Tooltip content={<CustomTooltip />} cursor={{ stroke: 'hsl(var(--muted-foreground))', strokeWidth: 1 }} />
                     <Legend wrapperStyle={{ fontSize: '12px' }} />
                     <Line type="monotone" dataKey="amount" stroke={trendColor} strokeWidth={3} name="Daily Spending" dot={{ r: 3, fill: trendColor }} activeDot={{ r: 5 }} />

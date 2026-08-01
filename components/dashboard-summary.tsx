@@ -128,8 +128,9 @@ export function DashboardSummary({ userId }: { userId: string }) {
                 <BarChart data={stats.monthlyTrend} margin={{ top: 5, right: 10, bottom: 20, left: 10 }}>
                   {/* Theme-aware grid and axis lines */}
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} opacity={isDark ? 0.2 : 0.8} />
-                  <XAxis dataKey="month" angle={-45} textAnchor="end" height={60} style={{ fontSize: '11px' }} interval={0} stroke="hsl(var(--muted-foreground))" />
-                  <YAxis style={{ fontSize: '11px' }} tickFormatter={v => `₹${(v/1000).toFixed(0)}k`} stroke="hsl(var(--muted-foreground))" />
+                  {/* FIX: Added tick prop to change text color */}
+                  <XAxis dataKey="month" angle={-45} textAnchor="end" height={60} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: '11px' }} interval={0} stroke="hsl(var(--muted-foreground))" />
+                  <YAxis tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: '11px' }} tickFormatter={v => `₹${(v/1000).toFixed(0)}k`} stroke="hsl(var(--muted-foreground))" />
                   <Tooltip content={<CustomTooltip />} cursor={{ fill: 'hsl(var(--muted))', opacity: 0.5 }} />
                   {/* Premium dynamic colors */}
                   <Bar dataKey="income" fill={incomeColor} name="Income" radius={[4, 4, 0, 0]} />
