@@ -4,7 +4,27 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TrendingUp, TrendingDown, PiggyBank, AlertTriangle } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
-const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
+const CHART_COLORS = [
+  'hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 
+  'hsl(var(--chart-4))', 'hsl(var(--chart-5))'
+];
+
+// Custom Tooltip for Premium Look
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="glass-card p-3 shadow-xl border-border/60">
+        <p className="label text-sm font-medium mb-1">{label}</p>
+        {payload.map((entry: any, index: number) => (
+          <p key={`item-${index}`} className="text-xs" style={{ color: entry.color }}>
+            {entry.name}: ₹{Number(entry.value).toLocaleString('en-IN')}
+          </p>
+        ))}
+      </div>
+    );
+  }
+  return null;
+};
 
 export function DashboardSummary({ userId }: { userId: string }) {
   const [stats, setStats] = useState<{
@@ -100,13 +120,12 @@ export function DashboardSummary({ userId }: { userId: string }) {
             {stats.monthlyTrend?.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={stats.monthlyTrend} margin={{ top: 5, right: 10, bottom: 20, left: 10 }}>
-                  {/* FIX: Used CSS variables for dark mode compatibility */}
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
                   <XAxis dataKey="month" angle={-45} textAnchor="end" height={60} style={{ fontSize: '11px' }} interval={0} stroke="hsl(var(--muted-foreground))" />
                   <YAxis style={{ fontSize: '11px' }} tickFormatter={v => `₹${(v/1000).toFixed(0)}k`} stroke="hsl(var(--muted-foreground))" />
-                  <Tooltip cursor={{ fill: 'hsl(var(--muted))' }} contentStyle={{ background: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))', borderRadius: '0.5rem', color: 'hsl(var(--popover-foreground))' }} formatter={(value: number) => [`₹${value.toLocaleString('en-IN')}`, '']} />
-                  <Bar dataKey="income" fill="#6366f1" name="Income" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="expense" fill="#f43f5e" name="Expense" radius={[4, 4, 0, 0]} />
+                  <Tooltip content={<CustomTooltip />} cursor={{ fill: 'hsl(var(--muted))' }} />
+                  <Bar dataKey="income" fill="hsl(var(--chart-2))" name="Income" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="expense" fill="hsl(var(--chart-5))" name="Expense" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
@@ -124,7 +143,7 @@ export function DashboardSummary({ userId }: { userId: string }) {
                   <div key={index} className="space-y-1.5">
                     <div className="flex justify-between items-center text-sm">
                       <div className="flex items-center gap-2">
-                        <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
+                        <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }} />
                         <span className="font-medium">{category.name}</span>
                       </div>
                       <span className="font-semibold text-muted-foreground">₹{category.value.toLocaleString('en-IN')}</span>
@@ -133,7 +152,7 @@ export function DashboardSummary({ userId }: { userId: string }) {
                       <div className="h-full rounded-full transition-all duration-500"
                         style={{
                           width: `${(category.value / (stats.topCategories[0]?.value || 1)) * 100}%`,
-                          backgroundColor: COLORS[index % COLORS.length],
+                          backgroundColor: CHART_COLORS[index % CHART_COLORS.length],
                         }} />
                     </div>
                   </div>
