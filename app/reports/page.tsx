@@ -92,7 +92,8 @@ export default function ReportsPage() {
       const key = format(new Date(t.date), 'yyyy-MM');
       if (!monthlyMap.has(key)) monthlyMap.set(key, { income: 0, expense: 0 });
       const m = monthlyMap.get(key)!;
-      m[t.type] += t.amount;
+      if (t.type === 'income') m.income += t.amount;
+      else m.expense += t.amount;
     });
 
     const monthlyArr = Array.from(monthlyMap.entries())
