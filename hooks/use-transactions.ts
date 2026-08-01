@@ -1,36 +1,36 @@
 import { useState, useEffect, useCallback } from 'react';
-import { createClient } from '@/lib/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import type { Transaction } from '@/types';
 
 type NewTransaction = Omit<Transaction, 'id' | 'user_id' | 'created_at'>;
 
-export function useTransactions(userId: string, limit?: number) {
+export function useTransactions(userId?: string, limit?: number) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
-  const supabase = createClient();
 
   const fetchTransactions = useCallback(async () => {
+    if (!userId) {
+      setLoading(false);
+      return; // Don't fetch if userId isn't ready yet
+    }
+    
     setLoading(true);
-    // NOTE: This still uses Supabase directly for read because RLS protects it
-    // and it lets us use `.select('*, categories(name, icon)')` join easily.
-    let query = supabase
-      .from('transactions')
-      .select('*, categories(name, icon)')
-      .eq('user_id', userId)
-      .order('date', { ascending: false });
-    if (limit) query = query.limit(limit);
-    const { data, error } = await query;
-    if (error) {
+    try {
+      const res = await fetch('/api/transactions', { cache: 'no-store' });
+      if (!res.ok) throw new Error('Failed to load transactions');
+      const data: Transaction[] = await res.json();
+      setTransactions(limit ? data.slice(0, limit) : data);
+    } catch (err) {
       toast({
         title: 'Failed to load transactions',
-        description: error.message,
+        description: err instanceof Error ? err.message : 'Unknown error',
         variant: 'destructive',
       });
+      setTransactions([]);
+    } finally {
+      setLoading(false);
     }
-    setTransactions(data || []);
-    setLoading(false);
-  }, [userId, limit, supabase]);
+  }, [userId, limit]);
 
   useEffect(() => {
     fetchTransactions();
@@ -40,10 +40,11 @@ export function useTransactions(userId: string, limit?: number) {
     const optimistic: Transaction = {
       id: `temp-${Date.now()}`,
       ...transaction,
-      user_id: userId,
+      user_id: userId || '',
       created_at: new Date().toISOString(),
       categories: undefined,
-    };
+    } as Transaction;
+    
     setTransactions((prev) => [optimistic, ...prev]);
 
     try {
@@ -87,7 +88,6 @@ export function useTransactions(userId: string, limit?: number) {
       setTransactions((curr) => curr.map((t) => (t.id === id ? data : t)));
       toast({ title: 'Transaction updated' });
     } catch (err) {
-      // Rollback
       setTransactions(prev);
       toast({
         title: 'Failed to update transaction',
@@ -109,7 +109,6 @@ export function useTransactions(userId: string, limit?: number) {
       }
       toast({ title: 'Transaction deleted' });
     } catch (err) {
-      // Rollback
       setTransactions(prev);
       toast({
         title: 'Failed to delete transaction',
