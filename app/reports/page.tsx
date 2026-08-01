@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTheme } from 'next-themes';
 import { createClient } from '@/lib/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -13,12 +14,6 @@ import {
 } from 'recharts';
 import { format, subMonths } from 'date-fns';
 
-const CHART_COLORS = [
-  'hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 
-  'hsl(var(--chart-4))', 'hsl(var(--chart-5))', '#ec4899', '#14b8a6', '#f97316'
-];
-
-// Custom Tooltip for Premium Look
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
@@ -44,6 +39,7 @@ interface ReportData {
 interface AuthUser { id: string; email?: string; }
 
 export default function ReportsPage() {
+  const { resolvedTheme } = useTheme();
   const [user, setUser] = useState<AuthUser | null>(null);
   const [period, setPeriod] = useState('6months');
   const [customStart, setCustomStart] = useState<string>('');
@@ -131,6 +127,16 @@ export default function ReportsPage() {
 
   if (!user) return null;
 
+  // Theme-Aware Premium Color Palettes
+  const isDark = resolvedTheme === 'dark';
+  const CHART_COLORS = isDark 
+    ? ['#60a5fa', '#34d399', '#fbbf24', '#f87171', '#a78bfa', '#f472b6', '#2dd4bf', '#fb923c']
+    : ['#2563eb', '#059669', '#d97706', '#dc2626', '#7c3aed', '#db2777', '#0d9488', '#ea580c'];
+  
+  const incomeColor = isDark ? '#34d399' : '#059669';
+  const expenseColor = isDark ? '#f87171' : '#dc2626';
+  const trendColor = isDark ? '#a78bfa' : '#7c3aed';
+
   const totalExpense = reportData.categoryBreakdown.reduce((sum, item) => sum + item.value, 0);
   const renderPieLabel = ({ name, percent }: { name: string; percent: number }) => {
     if (percent < 0.05) return null;
@@ -188,13 +194,13 @@ export default function ReportsPage() {
                 {reportData.monthlyBreakdown.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={reportData.monthlyBreakdown} margin={{ top: 5, right: 20, bottom: 30, left: 20 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} opacity={isDark ? 0.2 : 0.8} />
                       <XAxis dataKey="month" angle={-45} textAnchor="end" height={60} style={{ fontSize: '11px' }} interval={0} stroke="hsl(var(--muted-foreground))" />
                       <YAxis style={{ fontSize: '11px' }} tickFormatter={(v) => `₹${(v/1000).toFixed(0)}k`} stroke="hsl(var(--muted-foreground))" />
-                      <Tooltip content={<CustomTooltip />} cursor={{ fill: 'hsl(var(--muted))' }} />
+                      <Tooltip content={<CustomTooltip />} cursor={{ fill: 'hsl(var(--muted))', opacity: 0.5 }} />
                       <Legend wrapperStyle={{ fontSize: '12px' }} />
-                      <Bar dataKey="income" fill="hsl(var(--chart-2))" name="Income" radius={[6, 6, 0, 0]} />
-                      <Bar dataKey="expense" fill="hsl(var(--chart-5))" name="Expense" radius={[6, 6, 0, 0]} />
+                      <Bar dataKey="income" fill={incomeColor} name="Income" radius={[6, 6, 0, 0]} />
+                      <Bar dataKey="expense" fill={expenseColor} name="Expense" radius={[6, 6, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (
@@ -277,12 +283,12 @@ export default function ReportsPage() {
               {reportData.dailySpending.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={reportData.dailySpending} margin={{ top: 5, right: 20, bottom: 30, left: 20 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} opacity={isDark ? 0.2 : 0.8} />
                     <XAxis dataKey="date" angle={-45} textAnchor="end" height={60} style={{ fontSize: '11px' }} interval={Math.max(0, Math.floor(reportData.dailySpending.length / 10))} stroke="hsl(var(--muted-foreground))" />
                     <YAxis style={{ fontSize: '11px' }} tickFormatter={(v) => `₹${v}`} stroke="hsl(var(--muted-foreground))" />
                     <Tooltip content={<CustomTooltip />} cursor={{ stroke: 'hsl(var(--muted-foreground))', strokeWidth: 1 }} />
                     <Legend wrapperStyle={{ fontSize: '12px' }} />
-                    <Line type="monotone" dataKey="amount" stroke="hsl(var(--chart-1))" strokeWidth={3} name="Daily Spending" dot={{ r: 3, fill: 'hsl(var(--chart-1))' }} activeDot={{ r: 5 }} />
+                    <Line type="monotone" dataKey="amount" stroke={trendColor} strokeWidth={3} name="Daily Spending" dot={{ r: 3, fill: trendColor }} activeDot={{ r: 5 }} />
                   </LineChart>
                 </ResponsiveContainer>
               ) : (

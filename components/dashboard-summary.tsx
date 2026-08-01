@@ -1,13 +1,9 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { useTheme } from 'next-themes';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TrendingUp, TrendingDown, PiggyBank, AlertTriangle } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
-
-const CHART_COLORS = [
-  'hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 
-  'hsl(var(--chart-4))', 'hsl(var(--chart-5))'
-];
 
 // Custom Tooltip for Premium Look
 const CustomTooltip = ({ active, payload, label }: any) => {
@@ -27,6 +23,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 export function DashboardSummary({ userId }: { userId: string }) {
+  const { resolvedTheme } = useTheme();
   const [stats, setStats] = useState<{
     totalIncome: number; totalExpense: number; savingsRate: number;
     monthlyTrend: Array<{ month: string; income: number; expense: number }>;
@@ -49,6 +46,15 @@ export function DashboardSummary({ userId }: { userId: string }) {
       </div>
     );
   }
+
+  // Theme-Aware Premium Color Palettes
+  const isDark = resolvedTheme === 'dark';
+  const CHART_COLORS = isDark 
+    ? ['#60a5fa', '#34d399', '#fbbf24', '#f87171', '#a78bfa', '#f472b6', '#2dd4bf', '#fb923c'] // Dark Mode (Bright)
+    : ['#2563eb', '#059669', '#d97706', '#dc2626', '#7c3aed', '#db2777', '#0d9488', '#ea580c']; // Light Mode (Rich)
+  
+  const incomeColor = isDark ? '#34d399' : '#059669';
+  const expenseColor = isDark ? '#f87171' : '#dc2626';
 
   const savingsRate = stats.savingsRate || 0;
   const isNegative = savingsRate < 0;
@@ -120,12 +126,14 @@ export function DashboardSummary({ userId }: { userId: string }) {
             {stats.monthlyTrend?.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={stats.monthlyTrend} margin={{ top: 5, right: 10, bottom: 20, left: 10 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                  {/* Theme-aware grid and axis lines */}
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} opacity={isDark ? 0.2 : 0.8} />
                   <XAxis dataKey="month" angle={-45} textAnchor="end" height={60} style={{ fontSize: '11px' }} interval={0} stroke="hsl(var(--muted-foreground))" />
                   <YAxis style={{ fontSize: '11px' }} tickFormatter={v => `₹${(v/1000).toFixed(0)}k`} stroke="hsl(var(--muted-foreground))" />
-                  <Tooltip content={<CustomTooltip />} cursor={{ fill: 'hsl(var(--muted))' }} />
-                  <Bar dataKey="income" fill="hsl(var(--chart-2))" name="Income" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="expense" fill="hsl(var(--chart-5))" name="Expense" radius={[4, 4, 0, 0]} />
+                  <Tooltip content={<CustomTooltip />} cursor={{ fill: 'hsl(var(--muted))', opacity: 0.5 }} />
+                  {/* Premium dynamic colors */}
+                  <Bar dataKey="income" fill={incomeColor} name="Income" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="expense" fill={expenseColor} name="Expense" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
