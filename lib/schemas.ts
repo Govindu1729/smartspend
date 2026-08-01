@@ -2,8 +2,11 @@ import { z } from 'zod';
 
 // ---- Reusable primitives ----
 export const uuidSchema = z.string().uuid();
-export const amountSchema = z.number().positive().max(1_000_000_000);
+export const amountSchema = z.coerce.number().positive().max(1_000_000_000);
 export const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'date must be YYYY-MM-DD');
+
+// Helper to convert empty strings to null for optional UUIDs
+const optionalUuidToNull = z.preprocess((val) => (val === '' || val === undefined ? null : val), uuidSchema.nullable().optional());
 
 // ---- Transactions ----
 export const transactionTypeSchema = z.enum(['income', 'expense']);
@@ -12,22 +15,22 @@ export const recurringIntervalSchema = z.enum(['daily', 'weekly', 'monthly', 'ye
 export const createTransactionSchema = z.object({
   amount: amountSchema,
   type: transactionTypeSchema,
-  category_id: uuidSchema.optional().nullable(),
+  category_id: optionalUuidToNull,
   description: z.string().trim().max(500).optional().nullable(),
   date: dateSchema.optional(),
   is_recurring: z.boolean().optional(),
-  recurring_interval: recurringIntervalSchema.optional().nullable(),
+  recurring_interval: z.preprocess((val) => (val === '' ? null : val), recurringIntervalSchema.nullable().optional()),
 });
 
 export const updateTransactionSchema = z.object({
   id: uuidSchema,
   amount: amountSchema.optional(),
   type: transactionTypeSchema.optional(),
-  category_id: uuidSchema.optional().nullable(),
+  category_id: optionalUuidToNull,
   description: z.string().trim().max(500).optional().nullable(),
   date: dateSchema.optional(),
   is_recurring: z.boolean().optional(),
-  recurring_interval: recurringIntervalSchema.optional().nullable(),
+  recurring_interval: z.preprocess((val) => (val === '' ? null : val), recurringIntervalSchema.nullable().optional()),
 });
 
 export const transactionQuerySchema = z.object({
@@ -53,13 +56,13 @@ export const createBudgetSchema = z.object({
   category_id: uuidSchema,
   month: dateSchema,
   amount: amountSchema,
-  alert_threshold: z.number().min(0.1).max(1).optional(),
+  alert_threshold: z.coerce.number().min(0.1).max(1).optional(),
 });
 
 export const updateBudgetSchema = z.object({
   id: uuidSchema,
   amount: amountSchema.optional(),
-  alert_threshold: z.number().min(0.1).max(1).optional(),
+  alert_threshold: z.coerce.number().min(0.1).max(1).optional(),
 });
 
 // ---- AI ----
