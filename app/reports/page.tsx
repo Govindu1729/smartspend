@@ -36,11 +36,13 @@ interface ReportData {
   dailySpending: Array<{ date: string; amount: number }>;
 }
 
-interface AuthUser { id: string; email?: string; }
+const CHART_COLORS_LIGHT = ['#2563eb', '#059669', '#d97706', '#dc2626', '#7c3aed', '#db2777', '#0d9488', '#ea580c'];
+const CHART_COLORS_DARK = ['#60a5fa', '#34d399', '#fbbf24', '#f87171', '#a78bfa', '#f472b6', '#2dd4bf', '#fb923c'];
 
 export default function ReportsPage() {
   const { resolvedTheme } = useTheme();
-  const [user, setUser] = useState<AuthUser | null>(null);
+  const [mounted, setMounted] = useState(false);
+  const [user, setUser] = useState<any>(null);
   const [period, setPeriod] = useState('6months');
   const [customStart, setCustomStart] = useState<string>('');
   const [customEnd, setCustomEnd] = useState<string>('');
@@ -52,10 +54,12 @@ export default function ReportsPage() {
   const supabase = createClient();
   const router = useRouter();
 
+  useEffect(() => { setMounted(true); }, []);
+
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) { router.push('/login'); return; }
-      setUser(user as AuthUser);
+      setUser(user);
       fetchReportData(user.id, period, customStart, customEnd);
     });
   }, [period, customStart, customEnd, router, supabase]);
@@ -81,9 +85,7 @@ export default function ReportsPage() {
 
     const response = await fetch(`/api/transactions?start=${startStr}&end=${endStr}`, { cache: 'no-store' });
     if (!response.ok) return;
-    const transactions: Array<{
-      amount: number; type: 'income' | 'expense'; date: string; categories?: { name: string } | null;
-    }> = await response.json();
+    const transactions: any[] = await response.json();
 
     const monthlyMap = new Map<string, { income: number; expense: number }>();
     transactions.forEach((t) => {
@@ -127,12 +129,10 @@ export default function ReportsPage() {
 
   if (!user) return null;
 
-  // Theme-Aware Premium Color Palettes
-  const isDark = resolvedTheme === 'dark';
-  const CHART_COLORS = isDark 
-    ? ['#60a5fa', '#34d399', '#fbbf24', '#f87171', '#a78bfa', '#f472b6', '#2dd4bf', '#fb923c']
-    : ['#2563eb', '#059669', '#d97706', '#dc2626', '#7c3aed', '#db2777', '#0d9488', '#ea580c'];
-  
+  const isDark = mounted && resolvedTheme === 'dark';
+  const axisColor = isDark ? '#94a3b8' : '#64748b';
+  const gridColor = isDark ? 'rgba(148,163,184,0.2)' : 'rgba(100,116,139,0.2)';
+  const CHART_COLORS = isDark ? CHART_COLORS_DARK : CHART_COLORS_LIGHT;
   const incomeColor = isDark ? '#34d399' : '#059669';
   const expenseColor = isDark ? '#f87171' : '#dc2626';
   const trendColor = isDark ? '#a78bfa' : '#7c3aed';
@@ -194,12 +194,11 @@ export default function ReportsPage() {
                 {reportData.monthlyBreakdown.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={reportData.monthlyBreakdown} margin={{ top: 5, right: 20, bottom: 30, left: 20 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} opacity={isDark ? 0.2 : 0.8} />
-                      {/* FIX: Added tick prop to change text color */}
-                      <XAxis dataKey="month" angle={-45} textAnchor="end" height={60} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: '11px' }} interval={0} stroke="hsl(var(--muted-foreground))" />
-                      <YAxis tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: '11px' }} tickFormatter={(v) => `₹${(v/1000).toFixed(0)}k`} stroke="hsl(var(--muted-foreground))" />
-                      <Tooltip content={<CustomTooltip />} cursor={{ fill: 'hsl(var(--muted))', opacity: 0.5 }} />
-                      <Legend wrapperStyle={{ fontSize: '12px' }} />
+                      <CartesianGrid strokeDasharray="3 3" stroke={gridColor} vertical={false} />
+                      <XAxis dataKey="month" angle={-45} textAnchor="end" height={60} tick={{ fill: axisColor, fontSize: 11 }} interval={0} stroke={axisColor} />
+                      <YAxis tick={{ fill: axisColor, fontSize: 11 }} tickFormatter={(v) => `₹${(v/1000).toFixed(0)}k`} stroke={axisColor} />
+                      <Tooltip content={<CustomTooltip />} cursor={{ fill: isDark ? 'rgba(148,163,184,0.1)' : 'rgba(100,116,139,0.1)' }} />
+                      <Legend wrapperStyle={{ fontSize: 12 }} />
                       <Bar dataKey="income" fill={incomeColor} name="Income" radius={[6, 6, 0, 0]} />
                       <Bar dataKey="expense" fill={expenseColor} name="Expense" radius={[6, 6, 0, 0]} />
                     </BarChart>
@@ -230,7 +229,7 @@ export default function ReportsPage() {
                         <div key={cat.name} className="flex items-center justify-between gap-4">
                           <div className="flex items-center gap-2">
                             <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }} />
-                            <span className="whitespace-nowrap text-muted-foreground">{cat.name}</span>
+                            <span className="whitespace-nowrap">{cat.name}</span>
                           </div>
                           <span className="font-medium">₹{cat.value.toLocaleString('en-IN')}</span>
                         </div>
@@ -270,9 +269,6 @@ export default function ReportsPage() {
                   </div>
                 </div>
               ))}
-              {reportData.categoryBreakdown.length === 0 && (
-                <p className="text-center text-muted-foreground py-12">No expense data for this period.</p>
-              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -284,12 +280,11 @@ export default function ReportsPage() {
               {reportData.dailySpending.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={reportData.dailySpending} margin={{ top: 5, right: 20, bottom: 30, left: 20 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} opacity={isDark ? 0.2 : 0.8} />
-                    {/* FIX: Added tick prop to change text color */}
-                    <XAxis dataKey="date" angle={-45} textAnchor="end" height={60} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: '11px' }} interval={Math.max(0, Math.floor(reportData.dailySpending.length / 10))} stroke="hsl(var(--muted-foreground))" />
-                    <YAxis tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: '11px' }} tickFormatter={(v) => `₹${v}`} stroke="hsl(var(--muted-foreground))" />
-                    <Tooltip content={<CustomTooltip />} cursor={{ stroke: 'hsl(var(--muted-foreground))', strokeWidth: 1 }} />
-                    <Legend wrapperStyle={{ fontSize: '12px' }} />
+                    <CartesianGrid strokeDasharray="3 3" stroke={gridColor} vertical={false} />
+                    <XAxis dataKey="date" angle={-45} textAnchor="end" height={60} tick={{ fill: axisColor, fontSize: 11 }} interval={Math.max(0, Math.floor(reportData.dailySpending.length / 10))} stroke={axisColor} />
+                    <YAxis tick={{ fill: axisColor, fontSize: 11 }} tickFormatter={(v) => `₹${v}`} stroke={axisColor} />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Legend wrapperStyle={{ fontSize: 12 }} />
                     <Line type="monotone" dataKey="amount" stroke={trendColor} strokeWidth={3} name="Daily Spending" dot={{ r: 3, fill: trendColor }} activeDot={{ r: 5 }} />
                   </LineChart>
                 </ResponsiveContainer>
