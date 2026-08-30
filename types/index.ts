@@ -29,3 +29,24 @@ export type Budget = {
   alert_threshold: number;
   categories?: { name: string; icon: string };
 };
+
+export type SavingsGoal = {
+  id: string;
+  user_id: string;
+  name: string;
+  target_amount: number;
+  current_amount: number;
+  deadline?: string | null;
+  icon?: string;
+  color?: string;
+  created_at?: string;
+};
+
+export type GoalContribution = {
+  id: string;
+  goal_id: string;
+  user_id: string;
+  amount: number;
+  comment?: string;
+  created_at?: string;
+};
