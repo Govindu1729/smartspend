@@ -1,0 +1,12 @@
+var R=require("../../../../chunks/[turbopack]_runtime.js")("server/app/api/ai/query/route.js")
+R.c("server/chunks/app_api_ai_query_route_ts_15-julu._.js")
+R.c("server/chunks/node_modules_next_0rjo3md._.js")
+R.c("server/chunks/node_modules_@supabase_postgrest-js_dist_index_mjs_1feib7u._.js")
+R.c("server/chunks/node_modules_@supabase_auth-js_dist_module_00x2u05._.js")
+R.c("server/chunks/node_modules_zod_v3_1zi-s0x._.js")
+R.c("server/chunks/node_modules_groq-sdk_1pr-7m2._.js")
+R.c("server/chunks/node_modules_0eogejj._.js")
+R.c("server/chunks/[root-of-the-server]__1r_v9cd._.js")
+R.c("server/chunks/_next-internal_server_app_api_ai_query_route_actions_1dbhw3b.js")
+R.m("[project]/node_modules/next/dist/esm/build/templates/app-route.js { INNER_APP_ROUTE => \"[project]/app/api/ai/query/route.ts [app-route] (ecmascript)\" } [app-route] (ecmascript)")
+module.exports=R.m("[project]/node_modules/next/dist/esm/build/templates/app-route.js { INNER_APP_ROUTE => \"[project]/app/api/ai/query/route.ts [app-route] (ecmascript)\" } [app-route] (ecmascript)").exports

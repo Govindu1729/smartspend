@@ -18,6 +18,10 @@ SmartSpend is a full-stack Next.js 16 + Supabase application that helps users ma
 | **AI Insights** | Ask questions in plain English ("How much did I spend on food?"), get auto-generated monthly summaries, and auto-categorize expenses via Google Gemini. |
 | **Reports** | 6-month income/expense trend, top spending categories, savings rate. Export transactions as CSV or text report. |
 | **PWA** | Installable on Android/iOS, offline support via service worker (cache-first for static, network-first for data). |
+| **Multi-Currency** 🆕 | Support for 10+ currencies (USD, EUR, GBP, INR, JPY, AUD, CAD, SGD, AED, SAR) with locale-aware formatting. |
+| **Savings Goals** 🆕 | Set financial goals with targets, deadlines, and progress tracking. Add contributions and monitor achievement. |
+| **Notification Preferences** 🆕 | Granular control over in-app, email, and push notifications with quiet hours support. |
+| **Rate Limiting** 🆕 | API protection with Upstash Redis to prevent abuse and control costs. |
 
 ---
 
