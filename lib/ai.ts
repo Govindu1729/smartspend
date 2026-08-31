@@ -1,9 +1,19 @@
 // Groq AI Integration for SmartSpend - FREE & FAST
 import Groq from 'groq-sdk';
 
+// Get API key from environment
+const apiKey = process.env.GROQ_API_KEY;
+
+// Debug logging (remove in production)
+if (!apiKey) {
+  console.error('⚠️ GROQ_API_KEY is not set in environment variables');
+} else {
+  console.log('✅ Groq API key found, length:', apiKey.length);
+}
+
 // Initialize Groq client with API key
 const groq = new Groq({ 
-  apiKey: process.env.GROQ_API_KEY || '' 
+  apiKey: apiKey || 'dummy-key-for-initialization'
 });
 
 const GROQ_MODEL = process.env.GROQ_MODEL || 'llama-3.1-8b-instant';

@@ -18,6 +18,7 @@ export type Category = {
   user_id: string;
   name: string;
   icon: string;
+  color?: string;
   is_default: boolean;
 };
 
