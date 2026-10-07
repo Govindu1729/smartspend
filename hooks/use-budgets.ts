@@ -54,9 +54,12 @@ export function useBudgets(userId: string) {
   };
 
   const checkAlerts = async () => {
-    const response = await fetch(`/api/budgets/check?user_id=${userId}`);
+    const response = await fetch(`/api/budgets/check-alerts?user_id=${userId}`);
+    if (!response.ok) {
+      throw new Error('Failed to check budget alerts');
+    }
     const data = await response.json();
-    return data;
+    return data.alerts || [];
   };
 
   return { budgets, loading, addBudget, updateBudget, deleteBudget, checkAlerts, refresh: fetchBudgets };
