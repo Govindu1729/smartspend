@@ -6,7 +6,7 @@ type NewTransaction = Omit<Transaction, 'id' | 'user_id' | 'created_at'>;
 
 export function useTransactions(userId?: string, limit?: number) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!userId); // Start loading if userId not ready
 
   const fetchTransactions = useCallback(async () => {
     if (!userId) {
@@ -32,9 +32,12 @@ export function useTransactions(userId?: string, limit?: number) {
     }
   }, [userId, limit]);
 
+  // Re-fetch when userId becomes available
   useEffect(() => {
-    fetchTransactions();
-  }, [fetchTransactions]);
+    if (userId) {
+      fetchTransactions();
+    }
+  }, [userId]);
 
   const addTransaction = async (transaction: NewTransaction) => {
     const optimistic: Transaction = {
