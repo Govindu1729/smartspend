@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { DashboardSummary } from '@/components/dashboard-summary';
 import { TransactionList } from '@/components/transaction-list';
+import { SpendingInsights } from '@/components/spending-insights';
 import { LandingPage } from '@/components/landing-page';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -64,6 +65,10 @@ export default async function Page() {
 
       <div className="mb-8">
         <DashboardSummary userId={user.id} />
+      </div>
+
+      <div className="mb-8">
+        <SpendingInsights userId={user.id} />
       </div>
 
       <div className="grid gap-6 md:grid-cols-3 mb-8">

@@ -231,3 +231,9 @@ CREATE TRIGGER on_auth_user_created
 --   supabase client created in lib/supabase/server.ts → createClient().
 -- - The service-role admin client (getSupabaseAdmin()) bypasses RLS by design
 --   and should only be used in trusted server contexts (cron, migrations).
+
+-- =========================================================
+-- 8. Add last_recurred_at column for recurring transactions
+-- =========================================================
+ALTER TABLE transactions ADD COLUMN IF NOT EXISTS last_recurred_at date;
+
