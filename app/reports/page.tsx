@@ -154,8 +154,8 @@ export default function ReportsPage() {
     <main className="container mx-auto p-4 md:p-8 max-w-7xl">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-8">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Reports & Analytics</h1>
-          <p className="text-muted-foreground mt-1">Visualize your financial habits over time.</p>
+          <h1 className="heading-md">Reports & Analytics</h1>
+          <p className="text-body">Visualize your financial habits over time.</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
           <Button variant="outline" onClick={handlePrint} className="glass-card border-border/50">

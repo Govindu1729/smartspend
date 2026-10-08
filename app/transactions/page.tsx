@@ -122,7 +122,9 @@ export default function TransactionsPage() {
   return (
     <main className="container mx-auto p-4 md:p-8 max-w-6xl">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-        <h1 className="text-3xl font-bold tracking-tight">Transactions</h1>
+        <div>
+          <h1 className="heading-md">Transactions</h1>
+        </div>
         <div className="flex flex-wrap gap-2">
           <input
             type="file"

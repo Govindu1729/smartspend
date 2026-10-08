@@ -1,115 +1,59 @@
 'use client';
 import Link from 'next/link';
-import { PiggyBank, Mail, Heart, ExternalLink } from 'lucide-react';
+import { Heart, ExternalLink } from 'lucide-react';
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="border-t mt-12">
+    <footer className="border-t border-border/30 mt-16">
       <div className="container mx-auto px-4 py-12">
-        <div className="grid gap-8 md:grid-cols-4 mb-8">
+        <div className="grid gap-8 md:grid-cols-2 mb-8">
           {/* Brand */}
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <PiggyBank className="h-6 w-6" />
               <span className="text-lg font-bold">SmartSpend</span>
             </div>
-            <p className="text-sm text-muted-foreground">
-              Your intelligent personal finance companion
+            <p className="text-sm text-muted-foreground max-w-xs">
+              Intelligent personal finance tracking powered by AI
             </p>
           </div>
 
-          {/* Product */}
-          <div>
-            <h3 className="font-semibold mb-4 text-sm">Product</h3>
-            <ul className="space-y-2 text-sm">
-              <li>
-                <Link href="/help" className="text-muted-foreground hover:text-foreground transition-colors">
-                  Features
-                </Link>
-              </li>
-              <li>
-                <Link href="/help" className="text-muted-foreground hover:text-foreground transition-colors">
-                  Pricing
-                </Link>
-              </li>
-              <li>
-                <Link href="/help" className="text-muted-foreground hover:text-foreground transition-colors">
-                  FAQ
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Resources */}
-          <div>
+          {/* Links */}
+          <div className="md:text-right">
             <h3 className="font-semibold mb-4 text-sm">Resources</h3>
-            <ul className="space-y-2 text-sm">
-              <li>
-                <Link href="/help" className="text-muted-foreground hover:text-foreground transition-colors">
-                  Help & Guide
-                </Link>
-              </li>
-              <li>
-                <Link href="/help" className="text-muted-foreground hover:text-foreground transition-colors">
-                  Blog
-                </Link>
-              </li>
-              <li>
-                <a
-                  href="https://github.com/Govindu1729/smartspend"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  GitHub
-                </a>
-              </li>
-            </ul>
-          </div>
-
-          {/* Connect */}
-          <div>
-            <h3 className="font-semibold mb-4 text-sm">Connect</h3>
-            <div className="space-y-2">
-              <a
-                href="mailto:support@smartspend.app"
-                className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <Mail className="h-4 w-4" />
-                Email
-              </a>
-              <br />
-              <a
-                href="https://github.com/Govindu1729/smartspend"
-                target="_blank"
+            <div className="flex flex-wrap gap-4 justify-start md:justify-end text-sm text-muted-foreground">
+              <a 
+                href="https://github.com/Govindu1729/smartspend" 
+                target="_blank" 
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                className="flex items-center gap-2 hover:text-foreground transition-colors"
               >
                 <ExternalLink className="h-4 w-4" />
                 GitHub
+              </a>
+              <a 
+                href="mailto:support@smartspend.app"
+                className="flex items-center gap-2 hover:text-foreground transition-colors"
+              >
+                Email
               </a>
             </div>
           </div>
         </div>
 
-        {/* Divider */}
-        <div className="border-t" />
-
         {/* Bottom */}
-        <div className="mt-8 flex flex-col md:flex-row items-center justify-between text-sm text-muted-foreground">
-          <p>
+        <div className="mt-8 pt-8 border-t border-border/30 text-sm text-muted-foreground flex flex-col md:flex-row items-center justify-between gap-4">
+          <p className="flex items-center gap-2">
             © {currentYear} SmartSpend. Made with{' '}
-            <Heart className="h-4 w-4 inline text-red-500 mx-0.5" />
-            by the SmartSpend team
+            <Heart className="h-4 w-4 text-red-500" />
           </p>
-          <div className="flex gap-6 mt-4 md:mt-0">
-            <a href="#" className="hover:text-foreground transition-colors">
-              Privacy Policy
+          <div className="flex gap-6">
+            <a href="#" className="hover:text-foreground transition-colors text-sm">
+              Privacy
             </a>
-            <a href="#" className="hover:text-foreground transition-colors">
-              Terms of Service
+            <a href="#" className="hover:text-foreground transition-colors text-sm">
+              Terms
             </a>
           </div>
         </div>

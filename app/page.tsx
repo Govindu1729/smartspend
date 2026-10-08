@@ -57,10 +57,10 @@ export default async function Page() {
 
   return (
     <main className="container mx-auto p-4 md:p-8 max-w-7xl">
-      <div className="mb-8 flex flex-col gap-1">
-        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
+      <div className="mb-8">
+        <div className="text-2xl font-semibold tracking-tight text-foreground">
           <Greeting name={displayName} />
-        </h1>
+        </div>
       </div>
 
       <div className="mb-8">

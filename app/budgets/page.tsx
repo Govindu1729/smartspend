@@ -44,8 +44,8 @@ export default function BudgetsPage() {
     <main className="container mx-auto p-4 md:p-8 max-w-6xl">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Budget Planner</h1>
-          <p className="text-muted-foreground mt-1">Track your spending limits and stay on target.</p>
+          <h1 className="heading-md">Budget Planner</h1>
+          <p className="text-body">Track your spending limits and stay on target.</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={refreshAlerts} disabled={alertsLoading} className="glass-card border-border/50">

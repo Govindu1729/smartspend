@@ -15,21 +15,20 @@ export function NavLinks() {
   const pathname = usePathname();
 
   return (
-    <div className="hidden md:flex items-center gap-1">
+    <div className="hidden lg:flex items-center gap-1">
       {navItems.map((item) => {
-        const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
-        
-        if (isActive) {
-          return (
-            <span key={item.href} className="flex items-center gap-2 text-sm px-3 py-2 rounded-md text-foreground bg-accent cursor-default">
-              <item.icon className="h-4 w-4" />
-              {item.label}
-            </span>
-          );
-        }
-
+        const isActive = pathname === item.href;
         return (
-          <Link key={item.href} href={item.href} className="flex items-center gap-2 text-sm px-3 py-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
+          <Link
+            key={item.href}
+            href={item.href}
+            className={`
+-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+              isActive
+                ? 'bg-primary/10 text-primary'
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+            }`}
+          >
             <item.icon className="h-4 w-4" />
             {item.label}
           </Link>
