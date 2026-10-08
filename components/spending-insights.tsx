@@ -87,16 +87,16 @@ export function SpendingInsights({ userId }: SpendingInsightsProps) {
     <div className="space-y-6">
       {/* Spending Forecast */}
       {forecast.length > 0 && (
-        <Card className="glass-card">
+        <Card className="stat-card card-hover">
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
-              📊 Monthly Spending Forecast
+              <span>📊</span> Monthly Spending Forecast
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               {forecast.map((f) => (
-                <div key={f.categoryId} className="p-4 rounded-lg bg-secondary/30">
+                <div key={f.categoryId} className="p-4 rounded-lg bg-secondary/30 border border-border/30">
                   <div className="flex justify-between items-start mb-2">
                     <div>
                       <p className="font-medium">{f.categoryName}</p>

@@ -6,109 +6,71 @@ import Link from 'next/link';
 
 export function LandingPage() {
   return (
-    <div className="relative min-h-screen overflow-hidden">
-      {/* Background Glow Effects */}
-      <div className="absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute left-1/2 top-0 h-[500px] w-[800px] -translate-x-1/2 rounded-full bg-indigo-500/20 dark:bg-indigo-500/10 blur-[120px]"></div>
-        <div className="absolute bottom-0 right-0 h-[400px] w-[600px] rounded-full bg-violet-500/20 dark:bg-violet-500/10 blur-[120px]"></div>
-      </div>
-
+    <main className="min-h-screen">
       {/* Hero Section */}
-      <header className="container mx-auto px-4 py-24">
-        <nav className="flex justify-between items-center mb-24">
-          <h1 className="text-xl font-bold flex items-center gap-2">
-            <PiggyBank className="h-6 w-6 text-primary" />
-            <span className="gradient-text">SmartSpend</span>
+      <section className="relative py-20 lg:py-32 overflow-hidden">
+        {/* Background decoration */}
+        <div className="absolute inset-0 -z-10">
+          <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
+          <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-violet-400/10 rounded-full blur-3xl" />
+        </div>
+        
+        <div className="container mx-auto px-4 text-center">
+          <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6">
+            <span className="text-foreground">AI-Powered </span>
+            <span className="gradient-text">Personal Finance</span>
           </h1>
-          <div className="flex gap-4">
-            <Link href="/login"><Button variant="ghost">Sign In</Button></Link>
-            <Link href="/signup"><Button className="btn-gradient">Get Started</Button></Link>
-          </div>
-        </nav>
-
-        <div className="text-center max-w-4xl mx-auto">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-medium mb-8">
-            <Zap className="h-3.5 w-3.5" />
-            Powered by AI
-          </div>
           
-          <h2 className="text-5xl md:text-7xl font-bold mb-6 tracking-tight">
-            <span className="gradient-text">Smart Money</span>
-            <br />
-            Management for Students
-          </h2>
-          
-          <p className="text-lg md:text-xl text-muted-foreground mb-10 max-w-2xl mx-auto">
-            Track expenses, set budgets, and get AI-powered insights to master your finances. Built for UPI transactions, mess bills, and student life.
+          <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
+            Track spending, set budgets, get AI-powered insights, and receive real-time alerts
+            when you're about to overspend. Built for modern money management.
           </p>
-          
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+
+          <div className="flex gap-4 justify-center">
             <Link href="/signup">
-              <Button size="lg" className="btn-gradient text-lg px-8 h-12">
-                Start Free <ArrowRight className="ml-2 h-4 w-4" />
+              <Button className="btn-gradient px-6">
+                Get Started Free
               </Button>
             </Link>
             <Link href="/login">
-              <Button size="lg" variant="outline" className="text-lg px-8 h-12">
+              <Button variant="outline" size="lg" className="px-6">
                 Sign In
               </Button>
             </Link>
           </div>
         </div>
-      </header>
+      </section>
 
       {/* Features Grid */}
-      <section className="container mx-auto px-4 py-24">
-        <div className="text-center mb-16">
-          <h3 className="text-4xl font-bold tracking-tight mb-4">Everything you need to save smarter</h3>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">A complete financial toolkit designed specifically for the modern college student.</p>
-        </div>
-        
-        <div className="grid md:grid-cols-3 gap-6">
-          {[
-            { icon: TrendingUp, title: "Smart Tracking", desc: "Log transactions in seconds. Auto-categorize expenses with AI. Support for UPI, cash, and recurring payments." },
-            { icon: BarChart3, title: "Visual Insights", desc: "Beautiful charts and reports. See where your money goes with category breakdowns and monthly trends." },
-            { icon: Smartphone, title: "PWA Ready", desc: "Install on your phone like a native app. Works offline. Get push notifications for budget alerts." },
-            { icon: Zap, title: "AI-Powered", desc: "Ask natural language questions like \"How much did I spend on food?\" Get instant AI-generated answers." },
-            { icon: PiggyBank, title: "Budget Goals", desc: "Set monthly budgets per category. Visual progress bars show your spending. Get alerts before you overspend." },
-            { icon: Shield, title: "100% Free", desc: "No subscriptions, no hidden fees. Open source and built for students. Your data stays private and secure." }
-          ].map((feature, i) => (
-            <Card key={i} className="glass-card hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-              <CardHeader>
-                <div className="p-3 rounded-xl bg-primary/10 w-fit mb-4">
-                  <feature.icon className="h-6 w-6 text-primary" />
-                </div>
-                <CardTitle className="text-xl">{feature.title}</CardTitle>
-              </CardHeader>
-              <CardContent className="text-muted-foreground">
-                {feature.desc}
-              </CardContent>
-            </Card>
-          ))}
+      <section className="py-20 bg-secondary/30">
+        <div className="container mx-auto px-4">
+          <div className="grid md:grid-cols-3 gap-8">
+            <div className="stat-card">
+              <div className="mb-4 p-3 rounded-lg bg-primary/10 w-fit">
+                <TrendingUp className="h-6 w-6 text-primary" />
+              </div>
+              <h3 className="text-lg font-semibold mb-2">Smart Tracking</h3>
+              <p className="text-body">Automatically categorize transactions and track your spending patterns with intelligent insights.</p>
+            </div>
+            
+            <div className="stat-card">
+              <div className="mb-4 p-3 rounded-lg bg-emerald-500/10 w-fit">
+                <PiggyBank className="h-6 w-6 text-emerald-500" />
+              </div>
+              <h3 className="text-lg font-semibold mb-2">Budget Control</h3>
+              <p className="text-body">Set monthly budgets and receive alerts before you overspend. Stay on top of your finances.</p>
+            </div>
+            
+            <div className="stat-card">
+              <div className="mb-4 p-3 rounded-lg bg-violet-500/10 w-fit">
+                <Zap className="h-6 w-6 text-violet-500" />
+              </div>
+              <h3 className="text-lg font-semibold mb-2">AI Insights</h3>
+              <p className="text-body">Ask questions in plain English and get personalized financial recommendations powered by AI.</p>
+            </div>
+          </div>
         </div>
       </section>
-
-      {/* CTA Section */}
-      <section className="container mx-auto px-4 py-24 text-center">
-        <Card className="max-w-3xl mx-auto glass-card overflow-hidden relative">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-violet-500/5"></div>
-          <CardContent className="py-16 relative z-10">
-            <h3 className="text-4xl font-bold mb-4 tracking-tight">Ready to take control?</h3>
-            <p className="text-lg text-muted-foreground mb-8 max-w-xl mx-auto">
-              Join thousands of students who are already saving smarter with SmartSpend.
-            </p>
-            <Link href="/signup">
-              <Button size="lg" className="btn-gradient text-lg px-12 h-12">
-                Create Free Account <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-      </section>
-
-      <footer className="container mx-auto px-4 py-12 text-center text-sm text-muted-foreground border-t border-border/40">
-        © 2024 SmartSpend. Built with ❤️ for college students.
-      </footer>
-    </div>
+    </main>
   );
 }

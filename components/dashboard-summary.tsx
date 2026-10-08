@@ -68,34 +68,34 @@ export function DashboardSummary({ userId }: { userId: string }) {
 
   return (
     <div className="grid gap-6">
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card className="glass-card border-t-4 border-t-indigo-500">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
+      <div className="grid gap-6 md:grid-cols-3">
+        <Card className="stat-card card-hover">
+  <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Total Income</CardTitle>
-            <div className="p-2 rounded-full bg-indigo-100 dark:bg-indigo-900/30">
-              <TrendingUp className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+            <div className="p-2 rounded-lg bg-primary/10">
+              <TrendingUp className="h-5 w-5 text-primary" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">₹{stats.totalIncome.toLocaleString('en-IN')}</div>
+            <div className="text-2xl font-bold text-primary">₹{stats.totalIncome.toLocaleString('en-IN')}</div>
             <p className="text-xs text-muted-foreground mt-1">This month</p>
           </CardContent>
         </Card>
         
-        <Card className="glass-card border-t-4 border-t-rose-500">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <Card className="stat-card card-hover">
+  <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Total Expenses</CardTitle>
-            <div className="p-2 rounded-full bg-rose-100 dark:bg-rose-900/30">
-              <TrendingDown className="h-4 w-4 text-rose-600 dark:text-rose-400" />
+            <div className="p-2 rounded-lg bg-rose-500/10">
+              <TrendingDown className="h-5 w-5 text-rose-500" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-rose-600 dark:text-rose-400">₹{stats.totalExpense.toLocaleString('en-IN')}</div>
+            <div className="text-2xl font-bold text-rose-500">₹{stats.totalExpense.toLocaleString('en-IN')}</div>
             <p className="text-xs text-muted-foreground mt-1">This month</p>
           </CardContent>
         </Card>
         
-        <Card className={`glass-card border-t-4 ${isNegative ? 'border-t-rose-500' : isLow ? 'border-t-amber-500' : 'border-t-emerald-500'}`}>
+        <Card className={`stat-card card-hover`}>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Savings Rate</CardTitle>
             <div className={`p-2 rounded-full ${

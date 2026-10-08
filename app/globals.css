@@ -45,72 +45,86 @@
 }
 
 :root {
-  --background: hsl(222, 47%, 11%); /* Slate 950 */
-  --foreground: hsl(210, 40%, 98%);
-  --card: hsl(222, 47%, 11%); 
-  --card-foreground: hsl(210, 40%, 98%);
-  --popover: hsl(222, 47%, 11%);
-  --popover-foreground: hsl(210, 40%, 98%);
-  --primary: #6366f1; /* Indigo 500 */
-  --primary-foreground: #ffffff;
-  --secondary: hsl(217, 33%, 17%);
-  --secondary-foreground: hsl(210, 40%, 98%);
-  --muted: hsl(217, 33%, 17%);
-  --muted-foreground: hsl(215, 20%, 65%);
-  --accent: hsl(217, 33%, 17%);
-  --accent-foreground: hsl(210, 40%, 98%);
+  /* Professional slate palette - refined and sophisticated */
+  --background: #0a0a0a;
+  --foreground: #fafafa;
+  --card: #121212;
+  --card-foreground: #fafafa;
+  --popover: #18181b;
+  --popover-foreground: #fafafa;
+  
+  /* Refined accent: indigo-slate for professional fintech */
+  --primary: #7c86f5;
+  --primary-foreground: #0a0a0a;
+  --secondary: #27272a;
+  --secondary-foreground: #fafafa;
+  --muted: #27272a;
+  --muted-foreground: #a1a1aa;
+  --accent: #27272a;
+  --accent-foreground: #fafafa;
+  
   --destructive: #ef4444;
-  --border: hsl(217, 33%, 25%);
-  --input: hsl(217, 33%, 25%);
-  --ring: #6366f1;
-  --chart-1: #6366f1; /* Indigo */
-  --chart-2: #10b981; /* Emerald */
-  --chart-3: #f59e0b; /* Amber */
-  --chart-4: #d946ef; /* Fuchsia */
-  --chart-5: #ef4444; /* Red */
-  --radius: 0.875rem;
-  --sidebar: hsl(222, 47%, 11%);
-  --sidebar-foreground: hsl(210, 40%, 98%);
-  --sidebar-primary: #6366f1;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: hsl(217, 33%, 17%);
-  --sidebar-accent-foreground: hsl(210, 40%, 98%);
-  --sidebar-border: hsl(217, 33%, 25%);
-  --sidebar-ring: #6366f1;
+  --border: #3f3f46;
+  --input: #3f3f46;
+  --ring: #7c86f5;
+  
+  /* Professional chart palette */
+  --chart-1: #7c86f5;
+  --chart-2: #10b981;
+  --chart-3: #f59e0b;
+  --chart-4: #8b5cf6;
+  --chart-5: #f43f5e;
+  
+  --radius: 0.75rem;
+  
+  /* Sidebar */
+  --sidebar: #121212;
+  --sidebar-foreground: #fafafa;
+  --sidebar-primary: #7c86f5;
+  --sidebar-primary-foreground: #0a0a0a;
+  --sidebar-accent: #27272a;
+  --sidebar-accent-foreground: #fafafa;
+  --sidebar-border: #3f3f46;
+  --sidebar-ring: #7c86f5;
 }
 
 .light {
-  --background: hsl(210, 40%, 98%);
-  --foreground: hsl(222, 47%, 11%);
+  /* Clean, professional light mode */
+  --background: #f9fafb;
+  --foreground: #111827;
   --card: #ffffff;
-  --card-foreground: hsl(222, 47%, 11%);
+  --card-foreground: #111827;
   --popover: #ffffff;
-  --popover-foreground: hsl(222, 47%, 11%);
-  --primary: #4f46e5; /* Indigo 600 */
+  --popover-foreground: #111827;
+  
+  --primary: #6366f1;
   --primary-foreground: #ffffff;
-  --secondary: hsl(210, 40%, 96%);
-  --secondary-foreground: hsl(222, 47%, 11%);
-  --muted: hsl(210, 40%, 96%);
-  --muted-foreground: hsl(215, 16%, 47%);
-  --accent: hsl(210, 40%, 96%);
-  --accent-foreground: hsl(222, 47%, 11%);
+  --secondary: #f3f4f6;
+  --secondary-foreground: #111827;
+  --muted: #f3f4f6;
+  --muted-foreground: #6b7280;
+  --accent: #f3f4f6;
+  --accent-foreground: #111827;
+  
   --destructive: #ef4444;
-  --border: hsl(214, 32%, 91%);
-  --input: hsl(214, 32%, 91%);
-  --ring: #4f46e5;
-  --chart-1: #4f46e5;
+  --border: #e5e7eb;
+  --input: #e5e7eb;
+  --ring: #6366f1;
+  
+  --chart-1: #6366f1;
   --chart-2: #10b981;
   --chart-3: #f59e0b;
-  --chart-4: #d946ef;
-  --chart-5: #ef4444;
+  --chart-4: #8b5cf6;
+  --chart-5: #f43f5e;
+  
   --sidebar: #ffffff;
-  --sidebar-foreground: hsl(222, 47%, 11%);
-  --sidebar-primary: #4f46e5;
+  --sidebar-foreground: #111827;
+  --sidebar-primary: #6366f1;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: hsl(210, 40%, 96%);
-  --sidebar-accent-foreground: hsl(222, 47%, 11%);
-  --sidebar-border: hsl(214, 32%, 91%);
-  --sidebar-ring: #4f46e5;
+  --sidebar-accent: #f3f4f6;
+  --sidebar-accent-foreground: #111827;
+  --sidebar-border: #e5e7eb;
+  --sidebar-ring: #6366f1;
 }
 
 @layer base {
@@ -128,13 +142,46 @@
   }
 }
 
-/* Premium utility classes */
+/* Premium utility classes - refined for professional appearance */
 .glass-card {
-  @apply bg-card/80 backdrop-blur-xl border border-border/50 shadow-lg shadow-slate-900/5 dark:shadow-black/20;
+  @apply bg-card backdrop-blur-md border border-border/50 shadow-sm;
+  @apply dark:shadow-black/5;
 }
+
+.card-hover {
+  @apply transition-all duration-200;
+  @apply hover:shadow-md hover:border-primary/30;
+}
+
 .gradient-text {
-  @apply bg-gradient-to-r from-indigo-500 to-violet-500 bg-clip-text text-transparent dark:from-indigo-400 dark:to-violet-400;
+  @apply bg-gradient-to-r from-primary to-violet-400 bg-clip-text text-transparent;
 }
+
 .btn-gradient {
-  @apply bg-gradient-to-r from-indigo-500 to-violet-500 text-white hover:from-indigo-600 hover:to-violet-600 dark:from-indigo-600 dark:to-violet-600 shadow-sm shadow-indigo-500/20;
+  @apply bg-gradient-to-r from-primary to-violet-400 text-primary-foreground;
+  @apply shadow-sm shadow-primary/20;
+  @apply hover:shadow-primary/30 hover:-translate-y-0.5;
+  @apply transition-all duration-200;
+}
+
+/* Professional section headers */
+.section-title {
+  @apply text-xl font-semibold tracking-tight;
+  @apply dark:text-foreground text-foreground;
+}
+
+/* Professional cards */
+.stat-card {
+  @apply p-6 rounded-xl;
+  @apply bg-card border border-border/50;
+  @apply dark:shadow-black/5;
+}
+
+/* Better text hierarchy */
+.text-body {
+  @apply text-sm text-muted-foreground;
+}
+
+.text-caption {
+  @apply text-xs text-muted-foreground;
 }
