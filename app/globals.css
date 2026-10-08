@@ -142,15 +142,16 @@
   }
 }
 
-/* Premium utility classes - refined for professional appearance */
+/* Premium utility classes */
 .glass-card {
-  @apply bg-card backdrop-blur-md border border-border/50 shadow-sm;
-  @apply dark:shadow-black/5;
+  @apply bg-card backdrop-blur-md border border-border/30;
+  @apply dark:border-white/5;
+  @apply shadow-sm;
 }
 
 .card-hover {
   @apply transition-all duration-200;
-  @apply hover:shadow-md hover:border-primary/30;
+  @apply hover:shadow-md hover:border-primary/30 hover:-translate-y-0.5;
 }
 
 .gradient-text {
@@ -173,7 +174,8 @@
 /* Professional cards */
 .stat-card {
   @apply p-6 rounded-xl;
-  @apply bg-card border border-border/50;
+  @apply bg-card border border-border/30;
+  @apply dark:border-white/5;
   @apply dark:shadow-black/5;
 }
 
@@ -184,4 +186,13 @@
 
 .text-caption {
   @apply text-xs text-muted-foreground;
+}
+
+/* Premium headings */
+.heading-md {
+  @apply text-lg font-semibold tracking-tight text-foreground;
+}
+
+.heading-sm {
+  @apply text-base font-medium tracking-tight text-foreground;
 }
