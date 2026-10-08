@@ -4,6 +4,8 @@ import { useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';
 import { createClient } from '@/lib/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Print } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
@@ -144,6 +146,10 @@ export default function ReportsPage() {
     return `${name} ${(percent * 100).toFixed(0)}%`;
   };
 
+  const handlePrint = () => {
+    window.print();
+  };
+
   return (
     <main className="container mx-auto p-4 md:p-8 max-w-7xl">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-8">
@@ -152,6 +158,10 @@ export default function ReportsPage() {
           <p className="text-muted-foreground mt-1">Visualize your financial habits over time.</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+          <Button variant="outline" onClick={handlePrint} className="glass-card border-border/50">
+            <Print className="mr-2 h-4 w-4" />
+            Print
+          </Button>
           <Select value={period} onValueChange={setPeriod}>
             <SelectTrigger className="w-full sm:w-[180px] glass-card border-border/50" aria-label="Select period">
               <SelectValue placeholder="Select period" />
@@ -205,7 +215,10 @@ export default function ReportsPage() {
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div className="flex items-center justify-center h-full text-muted-foreground">No data available</div>
+                  <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-2">
+                    <span>No data available</span>
+                    <p className="text-xs">Add some transactions to see your spending patterns</p>
+                  </div>
                 )}
               </CardContent>
             </Card>

@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { TransactionForm } from './transaction-form';
 import { format } from 'date-fns';
-import { Pencil, Trash2, ArrowUpRight, ArrowDownRight, Repeat, PlusCircle } from 'lucide-react';
+import { Pencil, Trash2, ArrowUpRight, ArrowDownRight, Repeat, PlusCircle, Clipboard } from 'lucide-react';
 import Link from 'next/link';
 
 interface TransactionListProps {
@@ -23,6 +23,7 @@ interface TransactionListProps {
 export function TransactionList({ transactions: propTransactions, loading: propLoading, onUpdate: propOnUpdate, onDelete: propOnDelete, showAll, userId, limit }: TransactionListProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   // If a userId is provided, fetch transactions using the hook (dashboard use-case)
   const txHook = userId ? useTransactions(userId, limit) : null;
@@ -59,6 +60,12 @@ export function TransactionList({ transactions: propTransactions, loading: propL
       </Card>
     );
   }
+
+  const handleCopyId = async (id: string) => {
+    await navigator.clipboard.writeText(id);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 1500);
+  };
 
   return (
     <Card className="glass-card">
@@ -100,13 +107,21 @@ export function TransactionList({ transactions: propTransactions, loading: propL
                 </div>
               </div>
               <div className="flex items-center gap-4">
-                <span
+                                <span
                   className={`font-semibold ${
                     transaction.type === 'income' ? 'text-emerald-600' : 'text-rose-600'
                   }`}
                 >
                   {transaction.type === 'income' ? '+' : '-'}₹{transaction.amount.toLocaleString()}
                 </span>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={() => handleCopyId(transaction.id)}
+                  title="Copy transaction ID"
+                >
+                  <Clipboard className={`h-4 w-4 ${copiedId === transaction.id ? 'text-green-500' : ''}`} />
+                </Button>
                 <div className="flex gap-2">
                   <Dialog open={editingId === transaction.id} onOpenChange={() => setEditingId(null)}>
                     <DialogTrigger asChild>
