@@ -1,96 +1,50 @@
 import { z } from 'zod';
 
-// ---- Reusable primitives ----
-export const uuidSchema = z.string().uuid();
-export const amountSchema = z.coerce.number().positive().max(1_000_000_000);
-export const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'date must be YYYY-MM-DD');
+// Currency types
+export const currencySchema = z.enum(['INR', 'USD', 'EUR', 'GBP', 'SGD', 'AED', 'SAR']);
+export const supportedCurrencies = ['INR', 'USD', 'EUR', 'GBP', 'SGD', 'AED', 'SAR'] as const;
 
-// Helper to convert empty strings to null for optional UUIDs
-const optionalUuidToNull = z.preprocess((val) => (val === '' || val === undefined ? null : val), uuidSchema.nullable().optional());
-
-// ---- Transactions ----
-export const transactionTypeSchema = z.enum(['income', 'expense']);
-export const recurringIntervalSchema = z.enum(['daily', 'weekly', 'monthly', 'yearly']);
-
+// Transaction type
 export const createTransactionSchema = z.object({
-  amount: amountSchema,
-  type: transactionTypeSchema,
-  category_id: optionalUuidToNull,
+  amount: z.coerce.number().positive().max(1_000_000_000),
+  type: z.enum(['income', 'expense']),
+  category_id: z.string().uuid().nullable().optional(),
   description: z.string().trim().max(500).optional().nullable(),
-  date: dateSchema.optional(),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'date must be YYYY-MM-DD').optional(),
   is_recurring: z.boolean().optional(),
-  recurring_interval: z.preprocess((val) => (val === '' ? null : val), recurringIntervalSchema.nullable().optional()),
+  recurring_interval: z.enum(['daily', 'weekly', 'monthly', 'yearly']).nullable().optional(),
+  currency: currencySchema.optional(),
 });
 
 export const updateTransactionSchema = z.object({
-  id: uuidSchema,
-  amount: amountSchema.optional(),
-  type: transactionTypeSchema.optional(),
-  category_id: optionalUuidToNull,
+  id: z.string().uuid(),
+  amount: z.coerce.number().positive().max(1_000_000_000).optional(),
+  type: z.enum(['income', 'expense']).optional(),
+  category_id: z.string().uuid().nullable().optional(),
   description: z.string().trim().max(500).optional().nullable(),
-  date: dateSchema.optional(),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'date must be YYYY-MM-DD').optional(),
   is_recurring: z.boolean().optional(),
-  recurring_interval: z.preprocess((val) => (val === '' ? null : val), recurringIntervalSchema.nullable().optional()),
+  recurring_interval: z.enum(['daily', 'weekly', 'monthly', 'yearly']).nullable().optional(),
+  currency: currencySchema.optional(),
 });
 
-export const transactionQuerySchema = z.object({
-  start: dateSchema.optional(),
-  end: dateSchema.optional(),
-  type: z.enum(['income', 'expense', 'all']).optional(),
-});
-
-// ---- Categories ----
-export const createCategorySchema = z.object({
-  name: z.string().trim().min(1).max(50),
-  icon: z.string().trim().max(50).optional(),
-});
-
-export const updateCategorySchema = z.object({
-  id: uuidSchema,
-  name: z.string().trim().min(1).max(50).optional(),
-  icon: z.string().trim().max(50).optional(),
-});
-
-// ---- Budgets ----
+// Budget schema
 export const createBudgetSchema = z.object({
-  category_id: uuidSchema,
-  month: dateSchema,
-  amount: amountSchema,
+  category_id: z.string().uuid(),
+  month: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'month must be YYYY-MM-DD'),
+  amount: z.coerce.number().positive().max(1_000_000_000),
   alert_threshold: z.coerce.number().min(0.1).max(1).optional(),
 });
 
 export const updateBudgetSchema = z.object({
-  id: uuidSchema,
-  amount: amountSchema.optional(),
+  id: z.string().uuid(),
+  amount: z.coerce.number().positive().max(1_000_000_000).optional(),
   alert_threshold: z.coerce.number().min(0.1).max(1).optional(),
 });
 
-// ---- AI ----
-export const aiQuerySchema = z.object({
-  query: z.string().trim().min(1).max(1000),
-});
-
-export const aiCategorizeSchema = z.object({
-  description: z.string().trim().min(1).max(500),
-});
-
-// ---- Push ----
-export const pushSubscriptionSchema = z.object({
-  endpoint: z.string().url(),
-  keys: z.object({
-    p256dh: z.string().min(1),
-    auth: z.string().min(1),
-  }),
-});
-
-export const sendPushSchema = z.object({
-  message: z.string().trim().min(1).max(500),
-  title: z.string().trim().max(100).optional(),
-});
-
-// ---- Auth ----
-export const authSchema = z.object({
+// Email subscription schema
+export const emailSubscriptionSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(8).max(128),
-  full_name: z.string().trim().min(1).max(100).optional(),
+  frequency: z.enum(['weekly', 'monthly']),
+  categories: z.array(z.string()).optional(),
 });

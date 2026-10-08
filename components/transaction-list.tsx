@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { TransactionForm } from './transaction-form';
 import { format } from 'date-fns';
+import { formatCurrency } from '@/lib/currency';
 import { Pencil, Trash2, ArrowUpRight, ArrowDownRight, Repeat, PlusCircle, Clipboard } from 'lucide-react';
 import Link from 'next/link';
 
@@ -112,7 +113,7 @@ export function TransactionList({ transactions: propTransactions, loading: propL
                     transaction.type === 'income' ? 'text-emerald-600' : 'text-rose-600'
                   }`}
                 >
-                  {transaction.type === 'income' ? '+' : '-'}₹{transaction.amount.toLocaleString()}
+                  {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount, transaction.currency || 'INR')}
                 </span>
                 <Button
                   variant="ghost"

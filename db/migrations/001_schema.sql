@@ -237,3 +237,72 @@ CREATE TRIGGER on_auth_user_created
 -- =========================================================
 ALTER TABLE transactions ADD COLUMN IF NOT EXISTS last_recurred_at date;
 
+
+-- =========================================================
+-- 9. Multi-currency support
+-- =========================================================
+ALTER TABLE transactions ADD COLUMN IF NOT EXISTS currency text DEFAULT 'INR';
+
+-- =========================================================
+-- 10. Add base_currency to profile
+-- =========================================================
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS base_currency text DEFAULT 'INR';
+
+
+-- =========================================================
+-- 11. Email subscriptions table
+-- =========================================================
+CREATE TABLE IF NOT EXISTS email_subscriptions (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  email text NOT NULL,
+  frequency text DEFAULT 'weekly' CHECK (frequency IN ('weekly', 'monthly')),
+  categories text[] DEFAULT '{}',
+  enabled boolean DEFAULT true,
+  created_at timestamptz DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_email_subscriptions_user_id ON email_subscriptions(user_id);
+
+ALTER TABLE email_subscriptions ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "email_subscriptions_select_own" ON email_subscriptions;
+CREATE POLICY "email_subscriptions_select_own" ON email_subscriptions
+  FOR SELECT USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "email_subscriptions_insert_own" ON email_subscriptions;
+CREATE POLICY "email_subscriptions_insert_own" ON email_subscriptions
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "email_subscriptions_update_own" ON email_subscriptions;
+CREATE POLICY "email_subscriptions_update_own" ON email_subscriptions
+  FOR UPDATE USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "email_subscriptions_delete_own" ON email_subscriptions;
+CREATE POLICY "email_subscriptions_delete_own" ON email_subscriptions
+  FOR DELETE USING (auth.uid() = user_id);
+
+-- =========================================================
+-- 12. Weekly summaries history table
+-- =========================================================
+CREATE TABLE IF NOT EXISTS weekly_summaries (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  week_start date NOT NULL,
+  total_income numeric DEFAULT 0,
+  total_expense numeric DEFAULT 0,
+  transaction_count integer DEFAULT 0,
+  created_at timestamptz DEFAULT now(),
+  UNIQUE(user_id, week_start)
+);
+CREATE INDEX IF NOT EXISTS idx_weekly_summaries_user_id ON weekly_summaries(user_id);
+
+ALTER TABLE weekly_summaries ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "weekly_summaries_select_own" ON weekly_summaries;
+CREATE POLICY "weekly_summaries_select_own" ON weekly_summaries
+  FOR SELECT USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "weekly_summaries_insert_own" ON weekly_summaries;
+CREATE POLICY "weekly_summaries_insert_own" ON weekly_summaries
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+

@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { useCategories } from '@/hooks/use-categories';
 import { Loader2, Sparkles } from 'lucide-react';
+import { supportedCurrencies, CURRENCY_SYMBOLS } from '@/lib/currency';
 
 const transactionSchema = z.object({
   amount: z.number().positive('Amount must be positive'),
@@ -19,6 +20,7 @@ const transactionSchema = z.object({
   date: z.string(),
   is_recurring: z.boolean().default(false),
   recurring_interval: z.enum(['daily', 'weekly', 'monthly', 'yearly']).optional(),
+  currency: z.enum(['INR', 'USD', 'EUR', 'GBP', 'SGD', 'AED', 'SAR']).default('INR'),
 });
 
 interface TransactionFormProps {
@@ -96,9 +98,26 @@ export function TransactionForm({ userId, initialData, onSubmit }: TransactionFo
         </Select>
       </div>
 
-      {/* Amount */}
+      /* Amount */
       <div>
-        <Label htmlFor="amount" className="font-semibold">Amount (₹)</Label>
+        <div className="flex justify-between items-center mb-2">
+          <Label htmlFor="amount" className="font-semibold">Amount</Label>
+          <Select
+            defaultValue={initialData?.currency || 'INR'}
+            onValueChange={(value: string) => setValue('currency', value)}
+          >
+            <SelectTrigger className="w-[100px] h-8">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {supportedCurrencies.map((currency) => (
+                <SelectItem key={currency} value={currency}>
+                  {currency} ({CURRENCY_SYMBOLS[currency]})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
         <Input
           id="amount"
           type="number"
